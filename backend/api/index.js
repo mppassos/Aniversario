@@ -20,11 +20,17 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
-app.use("/api/clientes", clientesRoutes);
-app.use("/api/aniversario", aniversarioRoutes);
-app.use("/api/ia", iaRoutes);
-app.use("/api/whatsapp", whatsappRoutes);
+function registerRoutes(basePath) {
+  app.use(`${basePath}/clientes`, clientesRoutes);
+  app.use(`${basePath}/aniversario`, aniversarioRoutes);
+  app.use(`${basePath}/ia`, iaRoutes);
+  app.use(`${basePath}/whatsapp`, whatsappRoutes);
+}
+
+registerRoutes("");
+registerRoutes("/api");
 
 const DB_STATE = {
   0: "disconnected",
