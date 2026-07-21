@@ -10,12 +10,5 @@
       "src": "/(.*)",
       "dest": "server.js"
     }
-  ],
-  "env": {
-    "MONGODB_URI": "mongodb+srv://<usuario>:<senha>@<cluster>/<banco>?retryWrites=true&w=majority",
-    "MISTRAL_API_KEY": "sua-chave-mistral",
-    "NOME_CORRETOR": "Seu nome",
-    "APP_TIMEZONE": "America/Sao_Paulo",
-    "CORS_ORIGIN": "https://seu-frontend.vercel.app"
-  }
+  ]
 }
