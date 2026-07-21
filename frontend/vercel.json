@@ -13,8 +13,5 @@
         { "key": "X-XSS-Protection", "value": "1; mode=block" }
       ]
     }
-  ],
-  "env": {
-    "VITE_API_URL": "https://seu-backend.vercel.app/api"
-  }
+  ]
 }
