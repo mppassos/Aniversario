@@ -1,8 +1,6 @@
-const { Mistral } = require("@mistralai/mistralai");
-
 let mistralClient;
 
-function getMistralClient() {
+async function getMistralClient() {
   if (mistralClient) {
     return mistralClient;
   }
@@ -10,6 +8,8 @@ function getMistralClient() {
   if (!process.env.MISTRAL_API_KEY) {
     throw new Error("MISTRAL_API_KEY não configurada");
   }
+
+  const { Mistral } = await import("@mistralai/mistralai");
 
   mistralClient = new Mistral({
     apiKey: process.env.MISTRAL_API_KEY,

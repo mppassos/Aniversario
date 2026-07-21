@@ -37,11 +37,9 @@ function tryParseMistralResponse(rawText) {
 
 function formatarAssinatura(nomeCorretor) {
   const nome = nomeCorretor || process.env.NOME_CORRETOR;
-
   if (!nome) {
     return "Seu Corretor de Seguros";
   }
-
   return `*${nome}*\nSeu Corretor de Seguros`;
 }
 
@@ -52,10 +50,8 @@ async function gerarMensagensMistral(req, res) {
     return res.status(400).json({ message: "nomeCliente é obrigatório." });
   }
 
-  // ✅ Prioriza o nome enviado pelo frontend, senão usa a variável de ambiente
   const nomeCorretorDisplay = nomeCorretor || process.env.NOME_CORRETOR;
 
-  // ✅ Se não tiver nome, retorna erro claro
   if (!nomeCorretorDisplay) {
     return res.status(400).json({
       message:
@@ -66,7 +62,7 @@ async function gerarMensagensMistral(req, res) {
   const assinatura = formatarAssinatura(nomeCorretorDisplay);
 
   try {
-    const client = getMistralClient();
+    const client = await getMistralClient();
 
     const response = await client.chat.complete({
       model: "mistral-small-latest",
@@ -126,7 +122,6 @@ JSON:
 
       const assinaturaPattern = /\*[^*]+\*\s*Seu Corretor de Seguros/g;
       mensagem = mensagem.replace(assinaturaPattern, "").trim();
-
       mensagem = `${mensagem}\n\n${assinatura}`;
 
       return {
@@ -157,9 +152,7 @@ JSON:
 
 function gerarFallback(req, res) {
   const { nomeCliente, nomeCorretor } = req.body;
-
   const nome = nomeCorretor || process.env.NOME_CORRETOR;
-
   const assinatura = nome
     ? `*${nome}*\nSeu Corretor de Seguros`
     : "Seu Corretor de Seguros";
