@@ -54,41 +54,28 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-let startupPromise;
+let dbConnected = false;
 
-async function initializeApp() {
-  if (startupPromise) {
-    return startupPromise;
-  }
-
-  startupPromise = (async () => {
+async function connectAndStart() {
+  if (!dbConnected) {
     try {
       await connectDatabase();
       console.log("[MongoDB] Conectado com sucesso");
       iniciarAgendamentos();
+      dbConnected = true;
     } catch (err) {
       console.error("[MongoDB] Falha ao conectar:", err.message);
     }
-  })();
-
-  return startupPromise;
+  }
 }
 
-function startServer() {
-  app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-  });
-
-  initializeApp().catch((err) => {
-    console.error("[Startup] Falha ao inicializar:", err.message);
-  });
-}
+module.exports = app;
 
 if (require.main === module) {
-  startServer();
+  (async () => {
+    await connectAndStart();
+    app.listen(PORT, () => {
+      console.log(`Servidor rodando na porta ${PORT}`);
+    });
+  })();
 }
-
-module.exports = async function handler(req, res) {
-  await initializeApp();
-  return app(req, res);
-};
