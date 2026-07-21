@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  /* ✅ REMOVI O FUNDO CINZA DO HTML E BODY */
+  html,
+  body {
+    @apply h-full m-0 p-0;
+  }
+
+  body {
+    @apply font-sans text-gray-900 antialiased;
+  }
+
+  #root {
+    @apply min-h-screen flex justify-center;
+    /* ✅ FUNDO CINZA APENAS AQUI */
+    background-color: #f8fafc;
+  }
+}
+
+@layer components {
+  .app-container {
+    @apply w-full max-w-[480px] min-h-screen mx-auto px-4 pb-20 flex flex-col;
+    /* ✅ SEM FUNDO CINZA - DEIXA O #root CONTROLAR */
+  }
+
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 z-30 max-w-[480px] mx-auto;
+    @apply bg-white/95 backdrop-blur-xl border-t border-gray-200/50;
+    @apply h-[68px] flex px-3 pb-2 pt-1;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .nav-item {
+    @apply flex-1 flex items-center justify-center;
+  }
+
+  .nav-link {
+    @apply flex flex-col items-center justify-center gap-0.5;
+    @apply px-3 py-1.5 text-gray-400 text-[0.6rem] font-medium;
+    @apply rounded-xl transition-all duration-200;
+    @apply hover:text-brand-600 hover:bg-brand-50;
+  }
+
+  .nav-link.active {
+    @apply text-white bg-gradient-to-br from-brand-600 to-purple-600;
+    @apply shadow-md -translate-y-0.5;
+  }
+
+  .nav-link i {
+    @apply text-xl;
+  }
+
+  .birthday-card {
+    @apply bg-white rounded-2xl p-5 mb-3;
+    @apply border border-gray-200;
+    @apply transition-all duration-300;
+    @apply hover:shadow-lg hover:-translate-y-0.5;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  /* ✅ CALENDÁRIO COM COR BRANCA PURA E BORDA SÓLIDA */
+  .calendario-card {
+    @apply rounded-2xl border border-gray-200 mb-4;
+    background-color: #ffffff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .fab-btn {
+    @apply fixed bottom-[88px] right-4 z-20;
+    @apply w-14 h-14 rounded-full flex items-center justify-center;
+    @apply bg-gradient-to-br from-brand-600 to-purple-600 text-white;
+    @apply shadow-lg hover:shadow-xl hover:scale-105;
+    @apply transition-all duration-200 text-2xl;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-br from-brand-600 to-purple-600 text-white;
+    @apply hover:shadow-lg hover:scale-[1.02] active:scale-95;
+    @apply transition-all duration-200 font-semibold rounded-xl py-3;
+  }
+
+  .btn-success {
+    @apply bg-green-500 text-white;
+    @apply hover:shadow-lg hover:scale-[1.02] active:scale-95;
+    @apply transition-all duration-200 font-semibold rounded-xl py-3;
+  }
+
+  .btn-outline {
+    @apply border-2 border-gray-200 text-gray-600 bg-transparent;
+    @apply hover:bg-gray-50 hover:border-gray-300;
+    @apply transition-all duration-200 font-semibold rounded-xl py-3;
+  }
+}
