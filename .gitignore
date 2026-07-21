@@ -1,0 +1,159 @@
+# ================================
+# ARQUIVOS DE AMBIENTE (.env)
+# ================================
+
+# Ambiente local
+.env
+.env.local
+.env.*.local
+
+# Ambiente de produção
+.env.production
+.env.development
+
+# Backend
+backend/.env
+backend/.env.local
+backend/.env.production
+backend/.env.development
+
+# Frontend
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+frontend/.env.development
+
+# ================================
+# DEPENDÊNCIAS
+# ================================
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ================================
+# BUILD E DISTRIBUIÇÃO
+# ================================
+
+# Build de produção
+/dist
+/build
+/.next
+/out
+*.tsbuildinfo
+
+# Backend build
+backend/dist/
+backend/build/
+
+# Frontend build
+frontend/dist/
+frontend/build/
+
+# ================================
+# IDE E EDITORES
+# ================================
+
+# VSCode
+.vscode/
+*.code-workspace
+*.code-workspace.local
+
+# IntelliJ / WebStorm
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ================================
+# SISTEMAS OPERACIONAIS
+# ================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Linux
+*.swp
+*.swo
+*~
+
+# ================================
+# ARQUIVOS DE DADOS
+# ================================
+
+# Banco de dados local
+*.sqlite
+*.db
+*.sqlite3
+
+# ================================
+# LOGS E MONITORAMENTO
+# ================================
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+access.log
+error.log
+
+# ================================
+# TESTES E COBERTURA
+# ================================
+
+coverage/
+.nyc_output/
+*.lcov
+*.test.js
+
+# ================================
+# DEPLOY E TEMPORÁRIOS
+# ================================
+
+.vercel/
+.vercel_cache/
+.vercel_build/
+.cache/
+.temp/
+.tmp/
+
+# ================================
+# OUTROS
+# ================================
+
+# Secrets
+*.pem
+*.key
+*.crt
+*.csr
+
+# Dumps
+dump.rdb
+*.dump
+
+# Arquivos de ambiente de exemplo (subir)
+!.env.example
+!.env.production.example
+
+# Arquivos grandes
+*.zip
+*.tar.gz
+*.rar
+*.7z
