@@ -28,12 +28,17 @@ const ClienteSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    anoParabenizado: {
+      type: Number,
+      default: null,
+    },
   },
   { timestamps: true },
 );
 
 ClienteSchema.index({ dataNascimento: 1 });
 ClienteSchema.index({ parabenizadoHoje: 1, dataNascimento: 1 });
+ClienteSchema.index({ anoParabenizado: 1 });
 ClienteSchema.index({ nome: 1 });
 ClienteSchema.index({ telefone: 1 }, { sparse: true });
 

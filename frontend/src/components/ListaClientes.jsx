@@ -127,7 +127,7 @@ function ListaClientes({ clientes, onEdit, onDelete }) {
                 {cliente.telefone && (
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <i className="bi bi-whatsapp text-green-500 text-[0.65rem]" />
-                    <span className="hidden sm:inline">{cliente.telefone}</span>
+                    <span className="inline text-xs">{cliente.telefone}</span>
                   </span>
                 )}
               </div>

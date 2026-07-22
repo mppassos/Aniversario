@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { enviarMensagemWhatsApp, gerarMensagensIA } from '../services/api';
 
@@ -137,38 +138,39 @@ function GeradorMensagem({ cliente, nomeCorretor, onClose, onJaEnviei }) {
 
   const nomeCompacto = getNomeCompacto(cliente.nome);
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm px-0 sm:px-4 transition-opacity duration-300"
       onClick={(e) => e.target === e.currentTarget && handleClose()}
       role="dialog"
       aria-modal="true"
       ref={modalRef}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm overflow-hidden shadow-2xl flex flex-col"
+        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md overflow-hidden shadow-2xl flex flex-col transition-all duration-300 transform translate-y-0"
         style={{
-          maxHeight: '92dvh',
+          maxHeight: '90dvh',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-br from-brand-800 to-brand-600 px-4 py-3 flex-shrink-0">
-          <div className="flex items-center justify-between gap-2">
+        {/* Header do Modal */}
+        <div className="bg-gradient-to-br from-brand-800 to-brand-600 px-5 py-4 flex-shrink-0">
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h5 className="font-bold text-white text-sm flex items-center gap-2">
-                <i className="bi bi-sparkles"></i>
+              <h5 className="font-bold text-white text-base flex items-center gap-2">
+                <i className="bi bi-sparkles text-amber-300"></i>
                 Mensagens com IA
               </h5>
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span
-                  className="text-white/80 text-xs flex items-center gap-1 truncate"
+                  className="text-white/90 text-xs flex items-center gap-1.5 truncate font-medium"
                   title={cliente.nome}
                 >
-                  <i className="bi bi-person"></i>
+                  <i className="bi bi-person-fill"></i>
                   {nomeCompacto}
                 </span>
                 {cliente.telefone && (
-                  <span className="text-white/60 text-xs flex items-center gap-1 flex-shrink-0">
+                  <span className="text-white/70 text-xs flex items-center gap-1.5 flex-shrink-0">
                     <i className="bi bi-whatsapp"></i>
                     {cliente.telefone}
                   </span>
@@ -177,22 +179,24 @@ function GeradorMensagem({ cliente, nomeCorretor, onClose, onJaEnviei }) {
             </div>
             <button
               type="button"
-              className="text-white/70 hover:text-white transition-colors p-1 flex-shrink-0"
+              className="text-white/70 hover:text-white transition-colors p-1.5 hover:bg-white/10 rounded-lg flex-shrink-0"
               onClick={handleClose}
               aria-label="Fechar"
             >
-              <i className="bi bi-x-lg text-lg"></i>
+              <i className="bi bi-x-lg text-base"></i>
             </button>
           </div>
         </div>
 
+        {/* Scrollable Body - Área interna de geração */}
         <div
-          className="flex-1 overflow-y-auto bg-gray-50 p-4"
+          className="flex-1 overflow-y-auto bg-slate-50 p-4"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
+          {/* Botão de Ação Primária */}
           <button
             type="button"
-            className="w-full bg-gradient-to-br from-brand-600 to-purple-600 text-white rounded-xl py-3.5 font-semibold text-sm hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-4"
+            className="w-full bg-gradient-to-br from-brand-600 to-purple-600 text-white rounded-xl py-3.5 font-semibold text-sm hover:shadow-md hover:brightness-105 active:scale-[0.99] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-4"
             onClick={handleGerar}
             disabled={loading}
           >
@@ -210,26 +214,27 @@ function GeradorMensagem({ cliente, nomeCorretor, onClose, onJaEnviei }) {
           </button>
 
           {erro && (
-            <div className="bg-red-50 text-red-700 rounded-xl p-3 flex items-start gap-2 text-sm mb-3">
-              <i className="bi bi-exclamation-triangle-fill flex-shrink-0 mt-0.5"></i>
+            <div className="bg-red-50 text-red-700 rounded-xl p-3 flex items-start gap-2 text-xs mb-3 border border-red-100">
+              <i className="bi bi-exclamation-triangle-fill text-red-500 flex-shrink-0 mt-0.5"></i>
               <span>{erro}</span>
             </div>
           )}
 
           {!cliente.telefone && mensagens.length > 0 && (
-            <div className="bg-yellow-50 text-yellow-800 rounded-xl p-3 flex items-start gap-2 text-sm mb-3">
-              <i className="bi bi-exclamation-triangle-fill flex-shrink-0 mt-0.5"></i>
+            <div className="bg-yellow-50 text-yellow-800 rounded-xl p-3 flex items-start gap-2 text-xs mb-3 border border-yellow-100">
+              <i className="bi bi-exclamation-triangle text-yellow-600 flex-shrink-0 mt-0.5"></i>
               <span>Cliente sem telefone. Cadastre para enviar via WhatsApp.</span>
             </div>
           )}
 
+          {/* Renderização das Opções Baseadas em Estilo */}
           {mensagens.map((item, index) => {
             const key = item.estilo?.toLowerCase() || 'personalizado';
             const estilo = ESTILOS[key] || {
               icon: 'bi-chat-text-fill',
               label: item.estilo || 'Personalizado',
-              cor: 'text-gray-600',
-              bg: 'bg-gray-50',
+              cor: 'text-slate-600',
+              bg: 'bg-slate-50',
               descricao: '',
             };
             const isEnviando = enviando && mensagemEnviadaId === index;
@@ -238,24 +243,25 @@ function GeradorMensagem({ cliente, nomeCorretor, onClose, onJaEnviei }) {
             return (
               <div
                 key={index}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 mb-3 overflow-hidden"
+                className="bg-white rounded-xl shadow-sm border border-slate-200/60 mb-3 overflow-hidden"
               >
-                <div className={`${estilo.bg} px-3 py-2 flex items-center justify-between border-b border-gray-100/50`}>
+                {/* Header do Card Individual */}
+                <div className={`${estilo.bg} px-3.5 py-2.5 flex items-center justify-between border-b border-slate-100`}>
                   <div className="flex items-center gap-2">
                     <i className={`bi ${estilo.icon} ${estilo.cor} text-sm`}></i>
                     <span className={`font-semibold text-xs ${estilo.cor}`}>
                       {estilo.label}
                     </span>
-                    <span className="text-[0.6rem] text-gray-400 hidden sm:inline">
+                    <span className="text-[0.65rem] text-slate-400 hidden sm:inline font-normal">
                       • {estilo.descricao}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[0.6rem] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[0.65rem] text-slate-500 bg-slate-200/50 px-2 py-0.5 rounded-full font-medium">
                       {index + 1}/{mensagens.length}
                     </span>
                     {isCopiada && (
-                      <span className="text-[0.6rem] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <span className="text-[0.65rem] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <i className="bi bi-check-circle-fill"></i>
                         Copiada
                       </span>
@@ -263,26 +269,27 @@ function GeradorMensagem({ cliente, nomeCorretor, onClose, onJaEnviei }) {
                   </div>
                 </div>
 
-                <div className="p-3">
-                  <p className="text-xs text-gray-700 whitespace-pre-line leading-relaxed min-h-[60px]">
+                {/* Texto e Ações do Card */}
+                <div className="p-3.5">
+                  <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed min-h-[60px] select-text">
                     {item.mensagem}
                   </p>
 
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex gap-2.5 mt-3.5">
                     <button
                       type="button"
                       className={`flex-1 ${
                         cliente.telefone
-                          ? 'bg-green-500 hover:bg-green-600 active:scale-95'
-                          : 'bg-gray-200 cursor-not-allowed'
-                      } text-white rounded-lg py-2.5 px-2 text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5`}
+                          ? 'bg-green-500 hover:bg-green-600 active:scale-[0.98]'
+                          : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      } text-white rounded-lg py-2.5 px-3 text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-1.5`}
                       onClick={() => handleEnviarWhatsApp(item.mensagem, index)}
                       disabled={!cliente.telefone || enviando}
                     >
                       {isEnviando ? (
                         <>
-                          <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Abrindo...
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Processando...
                         </>
                       ) : (
                         <>
@@ -296,9 +303,9 @@ function GeradorMensagem({ cliente, nomeCorretor, onClose, onJaEnviei }) {
                       type="button"
                       className={`flex-1 ${
                         isCopiada
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      } rounded-lg py-2.5 px-2 text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5`}
+                          ? 'bg-green-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      } rounded-lg py-2.5 px-3 text-xs font-semibold transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-1.5`}
                       onClick={() => handleCopiar(item.mensagem, index)}
                     >
                       <i className={`bi ${isCopiada ? 'bi-check-circle-fill' : 'bi-clipboard'}`}></i>
@@ -310,23 +317,25 @@ function GeradorMensagem({ cliente, nomeCorretor, onClose, onJaEnviei }) {
             );
           })}
 
+          {/* Placeholder vazio */}
           {mensagens.length === 0 && !loading && !erro && (
-            <div className="text-center py-10 text-gray-400">
-              <i className="bi bi-chat-dots text-5xl block mb-3 opacity-40"></i>
-              <p className="text-sm font-medium text-gray-500">
-                Clique em "Gerar Mensagens com IA"
+            <div className="text-center py-12 px-4 text-slate-400">
+              <i className="bi bi-chat-left-heart text-5xl block mb-3 opacity-30 text-brand-600"></i>
+              <p className="text-sm font-semibold text-slate-600">
+                Gere sugestões de mensagem
               </p>
-              <p className="text-xs text-gray-400 mt-1">
-                para criar mensagens personalizadas para {nomeCompacto}
+              <p className="text-xs text-slate-400 mt-1 max-w-[240px] mx-auto">
+                Clique no botão superior para criar mensagens exclusivas de aniversário com Inteligência Artificial.
               </p>
             </div>
           )}
         </div>
 
-        <div className="p-3 border-t border-gray-100 bg-white flex-shrink-0">
+        {/* Footer do Modal */}
+        <div className="p-4 border-t border-slate-100 bg-white flex-shrink-0">
           <button
             type="button"
-            className="w-full bg-green-500 text-white rounded-xl py-3 font-semibold text-sm hover:bg-green-600 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full bg-green-500 text-white rounded-xl py-3 font-semibold text-sm hover:bg-green-600 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
             onClick={() => {
               onJaEnviei(cliente._id);
               onClose();
@@ -337,7 +346,8 @@ function GeradorMensagem({ cliente, nomeCorretor, onClose, onJaEnviei }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

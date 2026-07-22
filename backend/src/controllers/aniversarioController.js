@@ -4,6 +4,7 @@ const {
   getBirthdayClients,
   invalidateBirthdayCache,
   startOfToday,
+  getHojeNoFusoBrasil,
 } = require("../services/agendamentoService");
 
 async function listarAniversariantesHoje(_req, res) {
@@ -25,19 +26,23 @@ async function marcarJaEnviou(req, res) {
 
     const cliente = await Cliente.findById(clienteId);
     if (!cliente) {
-      return res.status(404).json({ message: "Cliente não encontrado." });
+      return res.status(404).json({ message: "Cliente nao encontrado." });
     }
 
-    if (cliente.parabenizadoHoje) {
+    const anoAtual = getHojeNoFusoBrasil().getFullYear();
+
+    if (cliente.anoParabenizado === anoAtual) {
       return res.json({
-        message: "Cliente já foi marcado como parabenizado hoje.",
+        message: "Cliente ja foi parabenizado este ano.",
+        anoParabenizado: anoAtual,
       });
     }
 
     cliente.parabenizadoHoje = true;
     cliente.ultimaDataParabenizacao = new Date();
-    await cliente.save();
+    cliente.anoParabenizado = anoAtual;
 
+    await cliente.save();
     await invalidateBirthdayCache();
 
     await Historico.create({
@@ -47,7 +52,10 @@ async function marcarJaEnviou(req, res) {
       enviado: true,
     });
 
-    return res.json({ message: "Cliente marcado como parabenizado hoje." });
+    return res.json({
+      message: "Cliente marcado como parabenizado.",
+      anoParabenizado: anoAtual,
+    });
   } catch (error) {
     console.error("[aniversarioController] marcarJaEnviou:", error.message);
     return res

@@ -1,139 +1,489 @@
-import {
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isSameMonth,
-  isToday,
-  startOfMonth,
-  startOfWeek
-} from 'date-fns';
+import { format, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useEffect, useState } from 'react';
-import { listarClientes } from '../services/api';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useCalendario } from '../hooks/useCalendario';
+import { useGeradorIA } from '../hooks/useGeradorIA';
+import {
+  calcularIdade,
+  clienteParabenizadoEsteAno,
+  formatarDataNascimento,
+  getIniciais,
+  getNomeCompacto,
+  isDiaHoje,
+} from '../utils/dateUtils';
 
-function CalendarioMensal({ onSelectCliente }) {
-  const [clientes, setClientes] = useState([]);
-  const anoAtual = new Date().getFullYear();
-  const hoje = new Date();
-  const [mesAtual, setMesAtual] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
-  const [loading, setLoading] = useState(true);
-  const [diaSelecionado, setDiaSelecionado] = useState(null);
-  const [clientesDoDia, setClientesDoDia] = useState([]);
+const ESTILOS_IA = {
+  equilibrada: { icon: 'bi-stars',          label: 'Equilibrada', cor: 'text-brand-600', bg: 'bg-brand-50' },
+  formal:      { icon: 'bi-briefcase-fill', label: 'Formal',      cor: 'text-gray-600',  bg: 'bg-gray-50'  },
+  proxima:     { icon: 'bi-heart-fill',     label: 'Proxima',     cor: 'text-green-600', bg: 'bg-green-50' },
+};
 
-  useEffect(() => {
-    carregarClientes();
-  }, []);
+const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
-  async function carregarClientes() {
-    try {
-      const data = await listarClientes(1, 999);
-      setClientes(Array.isArray(data.clientes) ? data.clientes : []);
-    } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
-      setClientes([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+const NOME_CORRETOR = import.meta.env.VITE_NOME_CORRETOR || 'Corretor de Seguros';
 
-  function getAniversariantesDoDia(dia) {
-    if (!Array.isArray(clientes)) return [];
-    
-    return clientes.filter(cliente => {
-      if (!cliente.dataNascimento) return false;
-      const data = new Date(cliente.dataNascimento);
-      return data.getDate() === dia.getDate() && 
-             data.getMonth() === dia.getMonth();
-    });
-  }
+function Spinner({ className = 'w-6 h-6' }) {
+  return (
+    <div className={`${className} border-2 border-brand-600 border-t-transparent rounded-full animate-spin`} />
+  );
+}
 
-  function handleDiaClick(dia) {
-    const aniversariantes = getAniversariantesDoDia(dia);
-    if (aniversariantes.length === 0) return;
-    
-    setDiaSelecionado(dia);
-    setClientesDoDia(aniversariantes);
-  }
+function ConfirmacaoInline({ mensagem, icone, corBg, corBorda, corTexto, onConfirmar, onCancelar, labelConfirmar, classeConfirmar }) {
+  return (
+    <div className={`${corBg} ${corBorda} border rounded-xl p-3 mb-2`}>
+      <p className={`text-xs font-semibold ${corTexto} mb-2 flex items-center gap-1.5`}>
+        <i className={`bi ${icone} flex-shrink-0`} />
+        {mensagem}
+      </p>
+      <div className="flex gap-2">
+        <button type="button" className="btn btn-outline flex-1 py-2 text-xs" onClick={onCancelar}>
+          Cancelar
+        </button>
+        <button type="button" className={`btn flex-1 py-2 text-xs ${classeConfirmar}`} onClick={onConfirmar}>
+          {labelConfirmar}
+        </button>
+      </div>
+    </div>
+  );
+}
 
-  function fecharModal() {
-    setDiaSelecionado(null);
-    setClientesDoDia([]);
-  }
-
-  function irParaMesAnterior() {
-    const novoMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth() - 1, 1);
-    
-    if (novoMes.getFullYear() !== anoAtual) {
-      return;
-    }
-    
-    setMesAtual(novoMes);
-    setDiaSelecionado(null);
-    setClientesDoDia([]);
-  }
-
-  function irParaProximoMes() {
-    const novoMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 1);
-    
-    if (novoMes.getFullYear() !== anoAtual) {
-      return;
-    }
-    
-    setMesAtual(novoMes);
-    setDiaSelecionado(null);
-    setClientesDoDia([]);
-  }
-
-  const inicioMes = startOfMonth(mesAtual);
-  const fimMes = endOfMonth(mesAtual);
-  const inicioCalendario = startOfWeek(inicioMes, { weekStartsOn: 0 });
-  const fimCalendario = endOfWeek(fimMes, { weekStartsOn: 0 });
-  const diasCalendario = eachDayOfInterval({
-    start: inicioCalendario,
-    end: fimCalendario
-  });
-
-  const semanas = [];
-  for (let i = 0; i < diasCalendario.length; i += 7) {
-    semanas.push(diasCalendario.slice(i, i + 7));
-  }
-
-  const diasDaSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-
-  function calcularIdade(dataNascimento) {
-    if (!dataNascimento) return null;
-    try {
-      const data = new Date(dataNascimento);
-      const hoje = new Date();
-      let idade = hoje.getFullYear() - data.getFullYear();
-      const mes = hoje.getMonth() - data.getMonth();
-      if (mes < 0 || (mes === 0 && hoje.getDate() < data.getDate())) {
-        idade--;
-      }
-      return idade;
-    } catch {
-      return null;
-    }
-  }
-
-  function getFontSize(nome) {
-    if (!nome) return 'text-sm';
-    if (nome.length > 35) return 'text-xs';
-    if (nome.length > 25) return 'text-xs';
-    return 'text-sm';
-  }
-
-  const isJaneiro = mesAtual.getMonth() === 0;
-  const isDezembro = mesAtual.getMonth() === 11;
-  const mesAtualNome = format(mesAtual, 'MMMM', { locale: ptBR });
-
-  if (loading) {
-    return (
-      <div className="calendario-card p-4">
-        <div className="flex justify-center py-4">
-          <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+function Avatar({ nome, parabenizado, tamanho = 'md' }) {
+  const iniciais = getIniciais(nome);
+  const cls      = tamanho === 'md' ? 'avatar-md' : 'avatar-sm';
+  return (
+    <div className="relative flex-shrink-0">
+      <div className={`${cls} ${parabenizado ? 'opacity-60' : ''}`}>
+        {iniciais || <i className="bi bi-person-fill text-xl" />}
+      </div>
+      {parabenizado && (
+        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+          <i className="bi bi-check-lg text-white text-[0.55rem] font-bold" />
         </div>
+      )}
+    </div>
+  );
+}
+
+function CardAniversariante({ cliente, onGerarMensagem, onJaEnviei, onEdit }) {
+  const [confirmandoEnvio, setConfirmandoEnvio] = useState(false);
+
+  const jaParabenizado = clienteParabenizadoEsteAno(cliente);
+  const nomeComp       = getNomeCompacto(cliente.nome);
+  const idade          = calcularIdade(cliente.dataNascimento);
+  const dataLocal      = formatarDataNascimento(cliente.dataNascimento);
+  const diaFormatado   = dataLocal
+    ? format(dataLocal, "dd 'de' MMMM", { locale: ptBR })
+    : '';
+
+  return (
+    <div className={`card p-3 mb-3 last:mb-0 transition-all duration-200 ${jaParabenizado ? 'opacity-75 bg-gray-50' : 'bg-white'}`}>
+
+      <div className="flex items-start gap-3">
+        <Avatar nome={cliente.nome} parabenizado={jaParabenizado} />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p
+              className={`font-bold text-sm leading-tight truncate ${jaParabenizado ? 'text-gray-500' : 'text-gray-800'}`}
+              title={cliente.nome}
+            >
+              {nomeComp}
+            </p>
+            {jaParabenizado ? (
+              <span className="badge-green text-[0.6rem] flex-shrink-0">
+                <i className="bi bi-check-circle-fill" /> Parabenizado
+              </span>
+            ) : (
+              <span className="badge-yellow text-[0.6rem] flex-shrink-0">
+                <i className="bi bi-clock" /> Pendente
+              </span>
+            )}
+          </div>
+
+          {nomeComp !== cliente.nome && (
+            <p className="text-[0.6rem] text-gray-400 truncate leading-tight mt-0.5">
+              {cliente.nome}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            <span className="flex items-center gap-1 text-xs text-gray-500">
+              <i className="bi bi-cake2 text-[0.65rem]" />
+              {diaFormatado}
+            </span>
+            {idade !== null && <span className="badge-blue">{idade} anos</span>}
+          </div>
+
+          {cliente.telefone ? (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <i className="bi bi-telephone text-green-500 text-sm flex-shrink-0" />
+              <span className="text-xs font-medium text-gray-600 truncate">{cliente.telefone}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <i className="bi bi-telephone-slash text-gray-300 text-sm flex-shrink-0" />
+              <span className="text-xs text-gray-400">Sem telefone</span>
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="btn-icon btn-ghost text-brand-600 hover:bg-brand-50 w-8 h-8 min-h-0 flex-shrink-0"
+          onClick={() => onEdit(cliente._id)}
+          aria-label="Editar cliente"
+        >
+          <i className="bi bi-pencil-fill text-xs" />
+        </button>
+      </div>
+
+      <div className="border-t border-gray-100 my-3" />
+
+      {confirmandoEnvio && (
+        <ConfirmacaoInline
+          mensagem={`Confirmar envio para ${nomeComp}?`}
+          icone="bi-question-circle-fill"
+          corBg="bg-green-50"
+          corBorda="border-green-100"
+          corTexto="text-green-800"
+          labelConfirmar={<><i className="bi bi-check-lg" /> Confirmar</>}
+          classeConfirmar="btn-success"
+          onConfirmar={() => { setConfirmandoEnvio(false); onJaEnviei(cliente._id); }}
+          onCancelar={() => setConfirmandoEnvio(false)}
+        />
+      )}
+
+      {!confirmandoEnvio && (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="btn btn-primary flex-1 py-2.5 text-xs"
+            onClick={() => onGerarMensagem(cliente)}
+          >
+            <i className="bi bi-stars flex-shrink-0" />
+            Gerar Mensagem
+          </button>
+          {!jaParabenizado && (
+            <button
+              type="button"
+              className="btn btn-success flex-1 py-2.5 text-xs"
+              onClick={() => setConfirmandoEnvio(true)}
+            >
+              <i className="bi bi-check-circle-fill flex-shrink-0" />
+              Ja Enviei
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CardMensagem({ item, index, total, cliente, onEnviar, onCopiar, enviando, enviadoId, copiadoId }) {
+  const key    = item.estilo?.toLowerCase() || 'personalizado';
+  const estilo = ESTILOS_IA[key] || { icon: 'bi-chat-text-fill', label: key, cor: 'text-gray-600', bg: 'bg-gray-50' };
+  const isEnviando = enviando && enviadoId === index;
+  const isCopiada  = copiadoId === index;
+
+  return (
+    <div className="card mb-3 overflow-hidden">
+      <div className={`${estilo.bg} px-3 py-2 flex items-center justify-between border-b border-gray-100`}>
+        <div className="flex items-center gap-2">
+          <i className={`bi ${estilo.icon} ${estilo.cor} text-sm`} />
+          <span className={`font-semibold text-xs ${estilo.cor}`}>{estilo.label}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="badge-gray text-[0.6rem]">{index + 1}/{total}</span>
+          {isCopiada && (
+            <span className="badge-green text-[0.6rem]">
+              <i className="bi bi-check-circle-fill" /> Copiada
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="p-3">
+        <p className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">
+          {item.mensagem}
+        </p>
+        <div className="flex gap-2 mt-3">
+          <button
+            type="button"
+            className={`btn flex-1 py-2 text-xs rounded-xl ${
+              cliente.telefone
+                ? 'bg-green-500 hover:bg-green-600 text-white'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed pointer-events-none'
+            }`}
+            onClick={() => onEnviar(item.mensagem, index)}
+            disabled={!cliente.telefone || enviando}
+          >
+            {isEnviando ? (
+              <><Spinner className="w-3 h-3" /> Abrindo...</>
+            ) : (
+              <><i className="bi bi-whatsapp flex-shrink-0" /> WhatsApp</>
+            )}
+          </button>
+          <button
+            type="button"
+            className={`btn flex-1 py-2 text-xs rounded-xl ${isCopiada ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            onClick={() => onCopiar(item.mensagem, index)}
+          >
+            <i className={`bi ${isCopiada ? 'bi-check-circle-fill' : 'bi-clipboard'} flex-shrink-0`} />
+            {isCopiada ? 'Copiado!' : 'Copiar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ViewGerador({ cliente, onVoltar, onJaEnviei }) {
+  const [confirmandoEnvio, setConfirmandoEnvio] = useState(false);
+  const nomeComp = getNomeCompacto(cliente.nome);
+
+  const {
+    loading, mensagens, erro,
+    enviando, mensagemEnviadaId, mensagemCopiadaId,
+    gerar, enviarWhatsApp, copiar,
+  } = useGeradorIA({ cliente, nomeCorretor: NOME_CORRETOR });
+
+  return (
+    <>
+      <div className="modal-header">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="btn-icon btn-ghost w-8 h-8 min-h-0 text-gray-500 flex-shrink-0"
+            onClick={onVoltar}
+            aria-label="Voltar"
+          >
+            <i className="bi bi-arrow-left text-base" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-bold text-gray-800 text-sm flex items-center gap-1.5">
+              <i className="bi bi-stars text-brand-600" />
+              Mensagens com IA
+            </h2>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <span className="text-xs text-gray-500 truncate" title={cliente.nome}>
+                {nomeComp}
+              </span>
+              {cliente.telefone && (
+                <span className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
+                  <i className="bi bi-telephone text-green-500 text-xs" />
+                  {cliente.telefone}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="modal-body">
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 rounded-full border-4 border-brand-100" />
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-brand-600 animate-spin" />
+            </div>
+            <p className="text-sm font-medium text-gray-500">Gerando mensagens...</p>
+            <p className="text-xs text-gray-400">A IA esta trabalhando para voce</p>
+          </div>
+        )}
+
+        {!loading && erro && (
+          <div className="space-y-3">
+            <div className="card border-red-100 bg-red-50 flex items-start gap-2 p-3">
+              <i className="bi bi-exclamation-triangle-fill text-red-500 flex-shrink-0 mt-0.5" />
+              <span className="text-xs text-red-700">{erro}</span>
+            </div>
+            <button type="button" className="btn btn-primary w-full" onClick={gerar}>
+              <i className="bi bi-arrow-clockwise flex-shrink-0" />
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {!loading && !erro && !cliente.telefone && mensagens.length > 0 && (
+          <div className="card border-yellow-100 bg-yellow-50 flex items-start gap-2 p-3 mb-3">
+            <i className="bi bi-exclamation-triangle-fill text-yellow-600 flex-shrink-0 mt-0.5" />
+            <span className="text-xs text-yellow-800">
+              Cliente sem telefone. Cadastre para enviar via WhatsApp.
+            </span>
+          </div>
+        )}
+
+        {!loading && !erro && mensagens.length > 0 && (
+          <button type="button" className="btn btn-outline w-full mb-4 text-xs" onClick={gerar}>
+            <i className="bi bi-arrow-clockwise flex-shrink-0" />
+            Gerar Novamente
+          </button>
+        )}
+
+        {!loading && mensagens.map((item, index) => (
+          <CardMensagem
+            key={index}
+            item={item}
+            index={index}
+            total={mensagens.length}
+            cliente={cliente}
+            onEnviar={enviarWhatsApp}
+            onCopiar={copiar}
+            enviando={enviando}
+            enviadoId={mensagemEnviadaId}
+            copiadoId={mensagemCopiadaId}
+          />
+        ))}
+      </div>
+
+      <div className="modal-footer">
+        {!confirmandoEnvio ? (
+          <button
+            type="button"
+            className="btn btn-success w-full"
+            onClick={() => setConfirmandoEnvio(true)}
+            disabled={loading}
+          >
+            <i className="bi bi-check-circle-fill flex-shrink-0" />
+            Ja Enviei
+          </button>
+        ) : (
+          <ConfirmacaoInline
+            mensagem={`Confirmar envio para ${nomeComp}?`}
+            icone="bi-question-circle-fill"
+            corBg="bg-green-50"
+            corBorda="border-green-100"
+            corTexto="text-green-800"
+            labelConfirmar={<><i className="bi bi-check-lg" /> Confirmar</>}
+            classeConfirmar="btn-success"
+            onConfirmar={() => { setConfirmandoEnvio(false); onJaEnviei(cliente._id); }}
+            onCancelar={() => setConfirmandoEnvio(false)}
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
+function ViewLista({ diaSelecionado, clientesDoDia, onGerarMensagem, onJaEnviei, onEdit, onFechar }) {
+  return (
+    <>
+      <div className="modal-header">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+              <i className="bi bi-calendar-event text-brand-600" />
+              {format(diaSelecionado, "dd 'de' MMMM", { locale: ptBR })}
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+              {clientesDoDia.length} aniversariante{clientesDoDia.length !== 1 ? 's' : ''}
+              {isDiaHoje(diaSelecionado) && <span className="badge-yellow">Hoje</span>}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn-icon btn-ghost w-8 h-8 min-h-0 text-gray-500"
+            onClick={onFechar}
+            aria-label="Fechar"
+          >
+            <i className="bi bi-x-lg" />
+          </button>
+        </div>
+      </div>
+
+      <div className="modal-body">
+        {clientesDoDia.map(cliente => (
+          <CardAniversariante
+            key={cliente._id}
+            cliente={cliente}
+            onGerarMensagem={onGerarMensagem}
+            onJaEnviei={onJaEnviei}
+            onEdit={onEdit}
+          />
+        ))}
+      </div>
+
+      <div className="modal-footer">
+        <button type="button" className="btn btn-outline w-full" onClick={onFechar}>
+          Fechar
+        </button>
+      </div>
+    </>
+  );
+}
+
+function CelulaCalendario({ dia, aniversariantes, onClick }) {
+  if (dia === null) return <div className="min-h-[40px]" />;
+
+  const diaHoje = isDiaHoje(dia);
+  const temAniv = aniversariantes.length > 0;
+
+  let bg    = 'bg-transparent';
+  let txt   = 'text-gray-800';
+  let dot   = 'bg-brand-500';
+  let ring  = '';
+  const hover = temAniv ? 'hover:bg-brand-100 cursor-pointer active:scale-95' : 'cursor-default';
+
+  if (diaHoje && temAniv) {
+    bg = 'bg-gradient-to-br from-brand-600 to-purple-600'; txt = 'text-white'; dot = 'bg-yellow-400'; ring = 'ring-2 ring-yellow-400 ring-offset-1';
+  } else if (diaHoje) {
+    bg = 'bg-brand-600'; txt = 'text-white';
+  } else if (temAniv) {
+    bg = 'bg-brand-50'; txt = 'text-brand-700';
+  }
+
+  return (
+    <div className="flex justify-center">
+      <div
+        className={`${bg} ${txt} ${ring} ${hover} rounded-lg transition-all duration-150 min-h-[40px] w-full mx-0.5 flex flex-col items-center justify-center select-none`}
+        onClick={() => temAniv && onClick(dia)}
+      >
+        <span className="text-xs font-medium leading-none">{format(dia, 'd')}</span>
+        {temAniv && (
+          <div className="flex justify-center gap-0.5 mt-0.5">
+            {aniversariantes.slice(0, 2).map((_, idx) => (
+              <div key={idx} className={`${dot} rounded-full w-1 h-1`} />
+            ))}
+            {aniversariantes.length > 2 && (
+              <span className={`text-[0.35rem] font-bold ${txt}`}>
+                +{aniversariantes.length - 2}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CalendarioMensal({ onJaEnviei, onRecarregar }) {
+  const {
+    loadingClientes,
+    mesAtual,
+    diaSelecionado,
+    clientesDoDia,
+    view,
+    clienteGerador,
+    semanas,
+    getAniversariantesDoDia,
+    handleDiaClick,
+    fecharModal,
+    abrirGerador,
+    voltarParaLista,
+    editarCliente,
+    marcarEnviado,
+    irParaMesAnterior,
+    irParaProximoMes,
+  } = useCalendario({ onJaEnviei, onRecarregar });
+
+  const mesNome    = format(mesAtual, 'MMMM', { locale: ptBR });
+  const modalAberto = diaSelecionado && clientesDoDia.length > 0;
+
+  if (loadingClientes) {
+    return (
+      <div className="calendario-card flex justify-center py-6">
+        <Spinner />
       </div>
     );
   }
@@ -141,285 +491,102 @@ function CalendarioMensal({ onSelectCliente }) {
   return (
     <>
       <div className="calendario-card">
-        {/* Header com destaque do mês atual */}
-        <div className="flex items-center justify-between px-3 pt-3">
+
+        <div className="flex items-center justify-between px-3 pt-3 pb-1">
           <button
             type="button"
-            className={`w-9 h-9 rounded-full transition-colors flex items-center justify-center ${
-              isJaneiro
-                ? 'text-gray-300 cursor-not-allowed'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-            }`}
+            className="btn-icon w-9 h-9 min-h-0 btn-ghost text-gray-600"
             onClick={irParaMesAnterior}
-            disabled={isJaneiro}
-            aria-label="Mês anterior"
+            aria-label="Mes anterior"
           >
-            <i className="bi bi-chevron-left"></i>
+            <i className="bi bi-chevron-left" />
           </button>
-          
-          <div className="flex items-center gap-2">
-            <h6 className="font-semibold text-gray-700 capitalize text-sm">
-              {mesAtualNome}
-            </h6>
-            {/* ✅ DESTAQUE DO MÊS ATUAL */}
-            {isSameMonth(mesAtual, new Date()) && (
-              <span className="text-[0.5rem] font-bold text-brand-600 bg-brand-100 px-2 py-0.5 rounded-full animate-pulse">
-                Atual
-              </span>
-            )}
+
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-700 capitalize text-sm">{mesNome}</span>
+              {isSameMonth(mesAtual, new Date()) && (
+                <span className="badge-blue text-[0.5rem] animate-pulse">Atual</span>
+              )}
+            </div>
+            <span className="text-[0.6rem] font-bold text-brand-600 bg-brand-50 px-3 py-0.5 rounded-full mt-0.5">
+              {mesAtual.getFullYear()}
+            </span>
           </div>
-          
+
           <button
             type="button"
-            className={`w-9 h-9 rounded-full transition-colors flex items-center justify-center ${
-              isDezembro
-                ? 'text-gray-300 cursor-not-allowed'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-            }`}
+            className="btn-icon w-9 h-9 min-h-0 btn-ghost text-gray-600"
             onClick={irParaProximoMes}
-            disabled={isDezembro}
-            aria-label="Próximo mês"
+            aria-label="Proximo mes"
           >
-            <i className="bi bi-chevron-right"></i>
+            <i className="bi bi-chevron-right" />
           </button>
         </div>
 
-        {/* Badge do ano */}
-        <div className="flex justify-center pb-2">
-          <span className="text-[0.55rem] font-bold text-brand-600 bg-brand-50 px-3 py-0.5 rounded-full">
-            {anoAtual}
-          </span>
-        </div>
-
-        {/* Dias da semana */}
-        <div className="px-2">
-          <div className="grid grid-cols-7 gap-0 mb-1">
-            {diasDaSemana.map((dia) => (
-              <div key={dia} className="text-center">
-                <span className="text-[0.6rem] font-medium text-gray-400">
-                  {dia}
-                </span>
+        <div className="px-2 pb-2">
+          {/* Cabeçalho dias da semana */}
+          <div className="grid grid-cols-7 mb-1">
+            {DIAS_SEMANA.map(dia => (
+              <div key={dia} className="text-center py-1">
+                <span className="text-[0.6rem] font-medium text-gray-400">{dia}</span>
               </div>
             ))}
           </div>
 
-          {/* Dias do mês */}
-          {semanas.map((semana, semanaIndex) => (
-            <div key={semanaIndex} className="grid grid-cols-7 gap-0 mb-0.5">
-              {semana.map((dia) => {
-                const aniversariantes = getAniversariantesDoDia(dia);
-                const isDiaAtual = isToday(dia);
-                const isMesAtual = dia.getMonth() === mesAtual.getMonth();
-                const temAniversariante = aniversariantes.length > 0;
-
-                let bgColor = 'transparent';
-                let textColor = 'text-gray-800';
-                let dotColor = 'bg-brand-500';
-                let border = 'border-transparent';
-                let hoverEffect = '';
-
-                if (isDiaAtual && temAniversariante) {
-                  bgColor = 'bg-gradient-to-br from-brand-600 to-purple-600';
-                  textColor = 'text-white';
-                  dotColor = 'bg-yellow-400';
-                  border = 'border-2 border-yellow-400';
-                } else if (isDiaAtual) {
-                  bgColor = 'bg-brand-600';
-                  textColor = 'text-white';
-                  dotColor = 'bg-white';
-                } else if (temAniversariante) {
-                  bgColor = 'bg-brand-50';
-                  textColor = 'text-gray-800';
-                  dotColor = 'bg-brand-500';
-                  hoverEffect = 'hover:bg-brand-100';
-                }
-
-                return (
-                  <div key={format(dia, 'yyyy-MM-dd')} className="text-center">
-                    <div
-                      className={`${bgColor} ${textColor} ${border} ${hoverEffect} rounded-lg transition-colors duration-200 min-h-[44px] flex flex-col items-center justify-center mx-0.5 ${
-                        temAniversariante ? 'cursor-pointer' : 'cursor-default'
-                      }`}
-                      style={{
-                        fontWeight: isDiaAtual ? '700' : '400',
-                      }}
-                      onClick={() => handleDiaClick(dia)}
-                    >
-                      <span className="text-xs font-medium">
-                        {format(dia, 'd')}
-                        {isDiaAtual && temAniversariante && (
-                          <i className="bi bi-star-fill ml-0.5 text-[0.4rem] text-yellow-400"></i>
-                        )}
-                      </span>
-                      
-                      {temAniversariante && (
-                        <div className="flex justify-center gap-0.5 mt-0.5">
-                          {aniversariantes.slice(0, 2).map((cliente, idx) => (
-                            <div
-                              key={idx}
-                              className={`${dotColor} rounded-full w-1 h-1`}
-                              style={{
-                                boxShadow: isDiaAtual ? '0 0 4px rgba(251, 191, 36, 0.5)' : 'none',
-                              }}
-                              title={cliente.nome}
-                            />
-                          ))}
-                          {aniversariantes.length > 2 && (
-                            <span className={`text-[0.35rem] font-bold opacity-80 ${textColor}`}>
-                              +{aniversariantes.length - 2}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+          {semanas.map((semana, si) => (
+            <div key={si} className="grid grid-cols-7 gap-0 mb-0.5">
+              {semana.map((dia, di) => (
+                <CelulaCalendario
+                  key={dia ? format(dia, 'yyyy-MM-dd') : `vazio-${si}-${di}`}
+                  dia={dia}
+                  aniversariantes={dia ? getAniversariantesDoDia(dia) : []}
+                  onClick={handleDiaClick}
+                />
+              ))}
             </div>
           ))}
 
-          {/* Legenda */}
-          <div className="flex justify-center gap-4 mt-2 pt-1 pb-2 text-[0.55rem]">
+          <div className="flex justify-center gap-4 pt-2 mt-1 border-t border-gray-100">
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-              <span className="text-gray-500">Aniversariante</span>
+              <span className="text-[0.55rem] text-gray-500">Aniversariante</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-              <span className="text-gray-500 font-bold">Hoje com aniversario</span>
+              <span className="text-[0.55rem] text-gray-500">Hoje com aniversario</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ✅ MODAL RESPONSIVO - CORRIGIDO PARA TELAS PEQUENAS */}
-      {diaSelecionado && clientesDoDia.length > 0 && (
+      {modalAberto && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-sm animate-fade-in"
-          onClick={(e) => e.target === e.currentTarget && fecharModal()}
+          className="modal-overlay"
+          onClick={e => e.target === e.currentTarget && fecharModal()}
         >
-          <div 
-            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm mx-0 sm:mx-4 overflow-hidden shadow-2xl"
-            style={{ 
-              maxHeight: '85vh',
-              height: 'auto',
-              minHeight: '200px',
-              maxWidth: '100%',
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="bg-gradient-to-br from-brand-800 to-brand-600 px-4 py-3 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <h6 className="font-bold text-white text-sm truncate">
-                    <i className="bi bi-calendar-event mr-2"></i>
-                    {format(diaSelecionado, "dd 'de' MMMM", { locale: ptBR })}
-                  </h6>
-                  <span className="text-white/70 text-xs">
-                    {clientesDoDia.length} aniversariante(s)
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="text-white/70 hover:text-white transition-colors p-1 flex-shrink-0 ml-2"
-                  onClick={fecharModal}
-                  aria-label="Fechar"
-                >
-                  <i className="bi bi-x-lg"></i>
-                </button>
-              </div>
-            </div>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
 
-            {/* Body com scroll */}
-            <div 
-              className="px-3 py-2 overflow-y-auto flex-1"
-              style={{ 
-                maxHeight: 'calc(85vh - 130px)',
-                minHeight: '80px',
-                WebkitOverflowScrolling: 'touch',
-              }}
-            >
-              {clientesDoDia.map((cliente) => {
-                const idade = calcularIdade(cliente.dataNascimento);
-                const iniciais = cliente.nome
-                  .split(' ')
-                  .slice(0, 2)
-                  .map(p => p[0])
-                  .join('')
-                  .toUpperCase();
-
-                return (
-                  <div
-                    key={cliente._id}
-                    className="flex items-center gap-2 p-2 mb-1.5 bg-white rounded-xl shadow-sm border border-gray-100"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                      {iniciais || <i className="bi bi-person-fill text-sm"></i>}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div 
-                        className="font-semibold text-gray-800 text-xs line-clamp-2"
-                        title={cliente.nome}
-                      >
-                        {cliente.nome}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1 text-[0.6rem] text-gray-500">
-                        <span className="flex items-center gap-0.5">
-                          <i className="bi bi-cake2 text-[0.5rem]"></i>
-                          {idade} anos
-                        </span>
-                        {cliente.telefone && (
-                          <span className="flex items-center gap-0.5">
-                            <i className="bi bi-whatsapp text-green-500 text-[0.5rem]"></i>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-0.5 flex-shrink-0">
-                      <button
-                        className="p-1 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors"
-                        onClick={() => {
-                          fecharModal();
-                          window.location.href = `/cliente/${cliente._id}`;
-                        }}
-                        aria-label="Editar"
-                      >
-                        <i className="bi bi-pencil-fill text-xs"></i>
-                      </button>
-                      <button
-                        className="p-1 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                        onClick={() => {
-                          if (window.confirm(`Excluir ${cliente.nome}?`)) {
-                            fecharModal();
-                          }
-                        }}
-                        aria-label="Excluir"
-                      >
-                        <i className="bi bi-trash-fill text-xs"></i>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Footer */}
-            <div className="p-3 border-t border-gray-100 flex-shrink-0">
-              <button
-                className="w-full py-2 rounded-xl bg-gray-100 text-gray-600 font-medium text-sm hover:bg-gray-200 transition-colors active:scale-[0.98]"
-                onClick={fecharModal}
-              >
-                Fechar
-              </button>
-            </div>
+            {view === 'lista' ? (
+              <ViewLista
+                diaSelecionado={diaSelecionado}
+                clientesDoDia={clientesDoDia}
+                onGerarMensagem={abrirGerador}
+                onJaEnviei={marcarEnviado}
+                onEdit={editarCliente}
+                onFechar={fecharModal}
+              />
+            ) : (
+              <ViewGerador
+                cliente={clienteGerador}
+                onVoltar={voltarParaLista}
+                onJaEnviei={marcarEnviado}
+              />
+            )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

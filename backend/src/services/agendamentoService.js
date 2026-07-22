@@ -7,7 +7,6 @@ const birthdayCache = new NodeCache({ stdTTL: 300 });
 
 function getHojeNoFusoBrasil() {
   const agora = new Date();
-  // Converte para o horário de Brasília
   const emBrasil = new Date(
     agora.toLocaleString("en-US", { timeZone: TIMEZONE }),
   );
@@ -21,20 +20,16 @@ function startOfToday() {
 }
 
 function sameDayMonthExpression(date) {
-  const diaLocal = date.getDate();
-  const mesLocal = date.getMonth() + 1;
-
   return {
     $and: [
-      { $eq: [{ $dayOfMonth: "$dataNascimento" }, diaLocal] },
-      { $eq: [{ $month: "$dataNascimento" }, mesLocal] },
+      { $eq: [{ $dayOfMonth: "$dataNascimento" }, date.getDate()] },
+      { $eq: [{ $month: "$dataNascimento" }, date.getMonth() + 1] },
     ],
   };
 }
 
 async function getBirthdayClients(forceRefresh = false) {
   const hoje = getHojeNoFusoBrasil();
-
   const ano = hoje.getFullYear();
   const mes = String(hoje.getMonth() + 1).padStart(2, "0");
   const dia = String(hoje.getDate()).padStart(2, "0");
@@ -42,13 +37,10 @@ async function getBirthdayClients(forceRefresh = false) {
 
   if (!forceRefresh) {
     const cached = birthdayCache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
+    if (cached) return cached;
   }
 
   const clientes = await Cliente.find({
-    parabenizadoHoje: false,
     $expr: sameDayMonthExpression(hoje),
   })
     .sort({ nome: 1 })
@@ -67,12 +59,28 @@ async function processDailyBirthdays() {
   return aniversariantes.length;
 }
 
-async function resetParabenizadoFlag() {
+async function resetParabenizadoHoje() {
   await Cliente.updateMany(
     { parabenizadoHoje: true },
     { $set: { parabenizadoHoje: false } },
   );
   await invalidateBirthdayCache();
+  console.log("[CRON] Flag parabenizadoHoje resetada.");
+}
+
+async function resetAnual() {
+  await Cliente.updateMany(
+    { anoParabenizado: { $ne: null } },
+    {
+      $set: {
+        anoParabenizado: null,
+        parabenizadoHoje: false,
+        ultimaDataParabenizacao: null,
+      },
+    },
+  );
+  await invalidateBirthdayCache();
+  console.log("[CRON] Reset anual executado — todos os clientes resetados.");
 }
 
 function iniciarAgendamentos() {
@@ -80,10 +88,9 @@ function iniciarAgendamentos() {
     "0 0 * * *",
     async () => {
       try {
-        await resetParabenizadoFlag();
-        console.log("[CRON] Flag parabenizadoHoje resetada.");
+        await resetParabenizadoHoje();
       } catch (err) {
-        console.error("[CRON] Erro ao resetar flag:", err.message);
+        console.error("[CRON] Erro no reset diario:", err.message);
       }
     },
     { timezone: TIMEZONE },
@@ -101,14 +108,30 @@ function iniciarAgendamentos() {
     },
     { timezone: TIMEZONE },
   );
+
+  cron.schedule(
+    "0 0 31 12 *",
+    async () => {
+      try {
+        await resetAnual();
+      } catch (err) {
+        console.error("[CRON] Erro no reset anual:", err.message);
+      }
+    },
+    { timezone: TIMEZONE },
+  );
+
+  console.log("[CRON] Agendamentos iniciados.");
 }
 
 module.exports = {
   iniciarAgendamentos,
   processDailyBirthdays,
-  resetParabenizadoFlag,
+  resetParabenizadoHoje,
+  resetAnual,
   sameDayMonthExpression,
   startOfToday,
   getBirthdayClients,
   invalidateBirthdayCache,
+  getHojeNoFusoBrasil,
 };
