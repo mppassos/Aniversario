@@ -41,7 +41,6 @@ function validarDataNascimento(dataStr) {
   return { valida: true, idade };
 }
 
-// LISTAR COM PAGINACAO
 async function listarClientes(req, res) {
   try {
     const page = parseInt(req.query.page) || 1;

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { listarAniversariantesHoje } from "../services/api";
 
+const listeners = new Set();
+
+export function notificarRecarregarAniversariantes() {
+  listeners.forEach((fn) => fn());
+}
+
 export function useAniversariantes() {
   const [aniversariantes, setAniversariantes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +29,8 @@ export function useAniversariantes() {
 
   useEffect(() => {
     carregar();
+    listeners.add(carregar);
+    return () => listeners.delete(carregar);
   }, [carregar]);
 
   return { aniversariantes, loading, error, recarregar: carregar };
