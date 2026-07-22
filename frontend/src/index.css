@@ -5,6 +5,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
 @layer base {
 
   *,
@@ -13,15 +14,20 @@
     @apply box-border;
   }
 
-  html,
-  body {
+  html {
     @apply h-full m-0 p-0;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
+    @apply h-full m-0 p-0;
     @apply font-sans text-gray-900;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   #root {
@@ -30,33 +36,43 @@
   }
 }
 
+/* ── Layout Shell ───────────────────────────────────────────────────────────── */
 @layer components {
 
+  /* Container principal — NÃO tem overflow próprio */
   .app-shell {
-    @apply w-full max-w-[480px] min-h-screen mx-auto flex flex-col;
-    background: #f1f5f9;
+    @apply w-full max-w-[480px] mx-auto flex flex-col;
+    min-height: 100dvh;
+    /* dvh respeita barra do browser no mobile */
   }
 
+  /* Área de conteúdo das páginas COM bottom-nav */
   .page-content {
     @apply flex-1 px-4 pt-4;
-    padding-bottom: 84px;
+    /* bottom-nav(68px) + safe-area iOS + folga(16px) */
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 16px);
   }
 
+  /* Área de conteúdo SEM bottom-nav (formulários) */
   .page-content--no-nav {
-    @apply flex-1 px-4 pt-4 pb-6;
+    @apply flex-1 px-4 pt-4;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
   }
 
+  /* ── Top Navigation ─────────────────────────────────────────────────────── */
   .top-nav {
+    /* sticky — fica no topo mas não é fixed, não retira do fluxo */
     @apply sticky top-0 z-40 px-4;
     @apply bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500;
     @apply shadow-md;
-    /* Safe area iOS */
-    padding-top: max(12px, env(safe-area-inset-top));
+    /* Safe area para notch/ilha dinâmica iOS */
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
     padding-bottom: 12px;
   }
 
   .top-nav__inner {
-    @apply flex items-center justify-between max-w-[480px] mx-auto;
+    @apply flex items-center justify-between;
+    @apply max-w-[480px] mx-auto;
   }
 
   .top-nav__brand {
@@ -64,9 +80,11 @@
   }
 
   .top-nav__logo {
-    @apply w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm;
+    @apply w-9 h-9 rounded-xl;
+    @apply bg-white/15 backdrop-blur-sm;
     @apply flex items-center justify-center;
     @apply border border-white/20 shadow-sm;
+    @apply flex-shrink-0;
   }
 
   .top-nav__title {
@@ -74,23 +92,26 @@
   }
 
   .top-nav__subtitle {
-    @apply text-white/60 text-[0.6rem] font-medium;
+    @apply text-white/60 text-[0.6rem] font-medium leading-tight;
   }
 
   .top-nav__badge {
     @apply text-[0.5rem] font-semibold text-white/70;
     @apply bg-white/10 border border-white/15;
     @apply px-2 py-0.5 rounded-full;
+    @apply flex-shrink-0;
   }
 
+  /* ── Bottom Navigation ──────────────────────────────────────────────────── */
   .bottom-nav {
     @apply fixed bottom-0 left-0 right-0 z-40;
     @apply max-w-[480px] mx-auto;
     @apply bg-white border-t border-gray-200/80;
     @apply flex items-stretch;
     height: 68px;
-    box-shadow: var(--tw-shadow-nav, 0 -1px 0 rgba(0, 0, 0, 0.06), 0 -4px 16px rgba(0, 0, 0, 0.04));
-    padding-bottom: env(safe-area-inset-bottom);
+    /* Safe area iOS (home indicator) */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.06), 0 -4px 16px rgba(0, 0, 0, 0.04);
   }
 
   .nav-item {
@@ -98,10 +119,12 @@
   }
 
   .nav-link {
-    @apply flex flex-col items-center justify-center gap-0.5 w-full h-full;
+    @apply flex flex-col items-center justify-center gap-0.5;
+    @apply w-full h-full;
     @apply text-gray-400 text-[0.6rem] font-semibold;
     @apply transition-colors duration-150;
     @apply px-2 py-1;
+    min-height: 44px;
   }
 
   .nav-link i {
@@ -121,51 +144,72 @@
     @apply scale-110;
   }
 
-  /* Indicador ativo — bolinha embaixo */
+  /* Indicador pontinho ativo */
   .nav-link.active::after {
     content: '';
     @apply block w-1 h-1 rounded-full bg-brand-600 mt-0.5;
   }
 
-  /* ── Cards ────────────────────────────────────────────────────────────────── */
+  /* ── Cards ──────────────────────────────────────────────────────────────── */
   .card {
     @apply bg-white rounded-2xl border border-gray-100;
-    box-shadow: var(--tw-shadow, 0 1px 8px rgba(0, 0, 0, 0.06));
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.04);
   }
 
   .card--hover {
-    @apply transition-all duration-200;
-    @apply hover:-translate-y-0.5;
+    @apply transition-all duration-200 cursor-pointer;
   }
 
   .card--hover:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+    @apply -translate-y-0.5;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10), 0 0 1px rgba(0, 0, 0, 0.04);
   }
 
-  /* ── Botões ───────────────────────────────────────────────────────────────── */
+  .card--hover:active {
+    @apply translate-y-0;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  /* ── Birthday Card ───────────────────────────────────────────────────────── */
+  .birthday-card {
+    @apply card p-4 mb-3;
+    @apply transition-all duration-200;
+  }
+
+  /* ── Calendário ─────────────────────────────────────────────────────────── */
+  .calendario-card {
+    @apply card mb-4 overflow-hidden;
+  }
+
+  /* ── Botões ─────────────────────────────────────────────────────────────── */
+
+  /* Base — todos os botões herdam */
   .btn {
     @apply inline-flex items-center justify-center gap-2;
-    @apply font-semibold rounded-xl;
+    @apply font-semibold rounded-xl text-sm;
     @apply transition-all duration-150;
     @apply active:scale-[0.97];
-    @apply disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none;
+    @apply select-none;
     min-height: 44px;
-    /* touch target */
-    @apply px-4 text-sm;
+    @apply px-4;
+  }
+
+  .btn:disabled {
+    @apply opacity-60 cursor-not-allowed pointer-events-none;
   }
 
   .btn-primary {
     @apply btn;
     @apply bg-gradient-to-br from-brand-600 to-brand-700 text-white;
-    @apply hover:from-brand-500 hover:to-brand-600;
-    @apply shadow-sm hover:shadow-md;
+    @apply shadow-sm;
+    @apply hover:from-brand-500 hover:to-brand-600 hover:shadow-md;
   }
 
   .btn-success {
     @apply btn;
     @apply bg-green-500 text-white;
-    @apply hover:bg-green-600;
-    @apply shadow-sm hover:shadow-md;
+    @apply shadow-sm;
+    @apply hover:bg-green-600 hover:shadow-md;
   }
 
   .btn-outline {
@@ -186,29 +230,73 @@
     @apply hover:bg-red-50 hover:text-red-600;
   }
 
+  /* Botão quadrado para ícone */
   .btn-icon {
-    @apply btn;
-    @apply w-10 h-10 p-0 rounded-xl;
+    @apply inline-flex items-center justify-center;
+    @apply rounded-xl transition-all duration-150 active:scale-95;
+    @apply select-none;
+    width: 40px;
+    height: 40px;
     min-height: 40px;
   }
 
+  /* ── FAB (Floating Action Button) ───────────────────────────────────────── */
+  .fab {
+    @apply fixed z-30;
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 12px);
+    right: 16px;
+    @apply w-14 h-14 rounded-2xl;
+    @apply flex items-center justify-center text-2xl text-white;
+    @apply bg-gradient-to-br from-brand-600 to-brand-700;
+    @apply shadow-lg;
+    @apply transition-all duration-200;
+    @apply hover:shadow-xl hover:scale-105 active:scale-95;
+  }
+
+  /* ── Inputs ─────────────────────────────────────────────────────────────── */
   .input {
     @apply w-full px-4 py-3 rounded-xl text-sm text-gray-800;
     @apply border border-gray-200 bg-white;
-    @apply outline-none transition-all duration-150;
+    @apply outline-none;
+    @apply transition-all duration-150;
     @apply placeholder:text-gray-400;
     @apply focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+    font-size: max(16px, 0.875rem);
     min-height: 48px;
   }
 
   .input--error {
     @apply border-red-400 bg-red-50/30;
-    @apply focus:border-red-500 focus:ring-2 focus:ring-red-100;
+    @apply focus:border-red-500 focus:ring-red-100;
   }
 
+  /* ── Avatar ─────────────────────────────────────────────────────────────── */
+  .avatar {
+    @apply rounded-full flex-shrink-0;
+    @apply flex items-center justify-center;
+    @apply font-bold text-white;
+    @apply bg-gradient-to-br from-brand-500 to-purple-600;
+    @apply shadow-sm;
+  }
+
+  .avatar-sm {
+    @apply avatar w-9 h-9 text-xs;
+  }
+
+  .avatar-md {
+    @apply avatar w-12 h-12 text-sm;
+  }
+
+  .avatar-lg {
+    @apply avatar w-14 h-14 text-base;
+  }
+
+  /* ── Badges ─────────────────────────────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full;
+    @apply inline-flex items-center gap-1;
+    @apply px-2.5 py-0.5 rounded-full;
     @apply text-[0.65rem] font-bold;
+    @apply leading-none;
   }
 
   .badge-blue {
@@ -223,48 +311,15 @@
     @apply badge bg-amber-50 text-amber-700;
   }
 
+  .badge-red {
+    @apply badge bg-red-50 text-red-700;
+  }
+
   .badge-gray {
     @apply badge bg-gray-100 text-gray-500;
   }
 
-  .avatar {
-    @apply rounded-full flex-shrink-0 flex items-center justify-center;
-    @apply font-bold text-white;
-    @apply bg-gradient-to-br from-brand-500 to-purple-600;
-    @apply shadow-sm;
-  }
-
-  .avatar-sm {
-    @apply avatar w-9 h-9 text-sm;
-  }
-
-  .avatar-md {
-    @apply avatar w-12 h-12 text-base;
-  }
-
-  .avatar-lg {
-    @apply avatar w-14 h-14 text-lg;
-  }
-
-  .fab {
-    @apply fixed z-30;
-    bottom: calc(68px + env(safe-area-inset-bottom) + 12px);
-    right: 16px;
-    @apply w-14 h-14 rounded-2xl shadow-lg;
-    @apply flex items-center justify-center text-2xl text-white;
-    @apply bg-gradient-to-br from-brand-600 to-brand-700;
-    @apply transition-all duration-200;
-    @apply hover:shadow-xl hover:scale-105 active:scale-95;
-  }
-
-  .calendario-card {
-    @apply card mb-4 overflow-hidden;
-  }
-
-  .birthday-card {
-    @apply card card--hover p-4 mb-3;
-  }
-
+  /* ── Section header ─────────────────────────────────────────────────────── */
   .section-header {
     @apply flex items-center justify-between mb-3;
   }
@@ -274,18 +329,10 @@
   }
 
   .section-count {
-    @apply badge-blue text-xs font-bold px-3 py-1 rounded-full;
+    @apply badge-blue font-bold px-3 py-1 rounded-full text-xs;
   }
 
-  .ptr-container {
-    @apply flex justify-center items-center overflow-hidden;
-    @apply transition-all duration-200;
-  }
-
-  .divider {
-    @apply border-t border-gray-100 my-3;
-  }
-
+  /* ── Empty state ─────────────────────────────────────────────────────────── */
   .empty-state {
     @apply card text-center py-12 px-6;
   }
@@ -302,6 +349,13 @@
     @apply text-xs text-gray-400;
   }
 
+  /* ── Pull-to-refresh ────────────────────────────────────────────────────── */
+  .ptr-container {
+    @apply flex justify-center items-center overflow-hidden;
+    @apply transition-all duration-200;
+  }
+
+  /* ── Modal ──────────────────────────────────────────────────────────────── */
   .modal-overlay {
     @apply fixed inset-0 z-50;
     @apply flex items-end sm:items-center justify-center;
@@ -309,16 +363,19 @@
     @apply animate-fade-in;
   }
 
+  /* Sheet — sobe de baixo no mobile, centraliza no desktop */
   .modal-sheet {
     @apply bg-white w-full sm:max-w-sm;
     @apply rounded-t-3xl sm:rounded-2xl;
     @apply flex flex-col overflow-hidden;
-    @apply shadow-modal;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
     max-height: 92dvh;
   }
 
+  /* Handle visual (traço no topo do sheet) */
   .modal-handle {
-    @apply w-10 h-1 rounded-full bg-gray-200 mx-auto mt-3 mb-1 flex-shrink-0;
+    @apply w-10 h-1 rounded-full bg-gray-200;
+    @apply mx-auto mt-3 mb-1 flex-shrink-0;
   }
 
   .modal-header {
@@ -326,25 +383,38 @@
     @apply border-b border-gray-100;
   }
 
-  .modal-body {
-    @apply flex-1 overflow-y-auto p-4;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .modal-footer {
-    @apply p-4 flex-shrink-0 border-t border-gray-100 bg-white;
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
-  }
-
+  /* Header com gradiente (modais coloridos) */
   .modal-header--gradient {
     @apply px-5 py-4 flex-shrink-0;
     @apply bg-gradient-to-br from-brand-800 to-brand-600;
   }
+
+  .modal-body {
+    @apply flex-1 overflow-y-auto p-4;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .modal-footer {
+    @apply p-4 flex-shrink-0;
+    @apply border-t border-gray-100 bg-white;
+    /* Safe area iOS */
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Divider ────────────────────────────────────────────────────────────── */
+  .divider {
+    @apply border-t border-gray-100 my-3;
+  }
 }
 
+/* ── Utilities extras ───────────────────────────────────────────────────────── */
 @layer utilities {
+
+  /* Esconde scrollbar mas mantém funcionalidade */
   .scrollbar-none {
     scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
   .scrollbar-none::-webkit-scrollbar {
@@ -354,5 +424,25 @@
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: #e2e8f0 transparent;
+  }
+
+  /* Texto com 2 linhas máximo */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Previne seleção de texto em elementos interativos */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Força aceleração de GPU em animações */
+  .gpu {
+    transform: translateZ(0);
+    will-change: transform;
   }
 }

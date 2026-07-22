@@ -56,8 +56,8 @@ function Home() {
   if (loading) return <LoadingSpinner texto="Carregando aniversariantes..." />;
 
   if (error) return (
-    <div className="animate-fade-in">
-      <div className="card border-red-100 bg-red-50 flex items-start gap-3 p-4 mb-4">
+    <div className="animate-fade-in space-y-3">
+      <div className="card border-red-100 bg-red-50 flex items-start gap-3 p-4">
         <i className="bi bi-exclamation-triangle-fill text-red-500 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
           <p className="text-sm font-semibold text-red-700">Erro ao carregar</p>
@@ -75,8 +75,8 @@ function Home() {
     <div
       className="transition-all duration-300"
       style={{
-        opacity:    isVisible ? 1 : 0,
-        transform:  isVisible ? 'translateY(0)' : 'translateY(8px)',
+        opacity:   isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
       }}
     >
       <PullToRefreshIndicator
@@ -84,11 +84,9 @@ function Home() {
         isRefreshing={isRefreshing}
       />
 
-      {/* Calendário */}
       <CalendarioMensal onSelectCliente={setClienteModal} />
 
-      {/* Header da seção */}
-      <div className="section-header">
+      <div className="section-header mt-1">
         <h2 className="section-title">
           <i className="bi bi-calendar-heart text-brand-600" />
           Aniversariantes de Hoje
@@ -98,7 +96,6 @@ function Home() {
         )}
       </div>
 
-      {/* Lista ou estado vazio */}
       {lista.length === 0 ? (
         <div className="card text-center py-10 px-6 animate-fade-in">
           <div className="text-5xl mb-3">🎉</div>
@@ -110,7 +107,7 @@ function Home() {
           </p>
         </div>
       ) : (
-        <div className="space-y-0">
+        <div className="space-y-3 pb-2">
           {lista.map((cliente, idx) => (
             <div
               key={cliente._id}
@@ -127,7 +124,6 @@ function Home() {
         </div>
       )}
 
-      {/* Modal gerador */}
       <GeradorMensagem
         cliente={clienteModal}
         nomeCorretor={nomeCorretor}
