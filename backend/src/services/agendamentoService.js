@@ -5,28 +5,46 @@ const NodeCache = require("node-cache");
 const TIMEZONE = process.env.APP_TIMEZONE || "America/Sao_Paulo";
 const birthdayCache = new NodeCache({ stdTTL: 300 });
 
-function startOfToday() {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return now;
+function getHojeNoFusoBrasil() {
+  const agora = new Date();
+  // Converte para o horário de Brasília
+  const emBrasil = new Date(
+    agora.toLocaleString("en-US", { timeZone: TIMEZONE }),
+  );
+  return emBrasil;
 }
 
-function sameDayMonthExpression(date = new Date()) {
+function startOfToday() {
+  const hoje = getHojeNoFusoBrasil();
+  hoje.setHours(0, 0, 0, 0);
+  return hoje;
+}
+
+function sameDayMonthExpression(date) {
+  const diaLocal = date.getDate();
+  const mesLocal = date.getMonth() + 1;
+
   return {
     $and: [
-      { $eq: [{ $dayOfMonth: "$dataNascimento" }, date.getDate()] },
-      { $eq: [{ $month: "$dataNascimento" }, date.getMonth() + 1] },
+      { $eq: [{ $dayOfMonth: "$dataNascimento" }, diaLocal] },
+      { $eq: [{ $month: "$dataNascimento" }, mesLocal] },
     ],
   };
 }
 
 async function getBirthdayClients(forceRefresh = false) {
-  const hoje = new Date();
-  const cacheKey = hoje.toISOString().split("T")[0];
+  const hoje = getHojeNoFusoBrasil();
+
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+  const cacheKey = `${ano}-${mes}-${dia}`;
 
   if (!forceRefresh) {
     const cached = birthdayCache.get(cacheKey);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
   }
 
   const clientes = await Cliente.find({

@@ -27,7 +27,7 @@ function App() {
         </div>
       </nav>
 
-      <main className={`flex-1 py-3 ${!isForm ? 'pb-[80px]' : 'pb-3'}`}>
+      <main className={`flex-1 py-3 ${!isForm ? 'pb-[100px]' : 'pb-3'}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/clientes" element={<Cadastro />} />
