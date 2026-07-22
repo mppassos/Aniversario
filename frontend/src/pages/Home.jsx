@@ -84,7 +84,7 @@ function Home() {
 
   return (
     <div 
-      className="w-full h-full overflow-visible transition-all duration-300"
+      className="w-full h-full overflow-visible transition-all duration-300 pb-20"
       style={{
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
@@ -117,8 +117,8 @@ function Home() {
         <div 
           className="space-y-3 pb-5 overflow-y-auto"
           style={{ 
-            maxHeight: 'calc(100vh - 480px)',
-            minHeight: '200px',
+            maxHeight: 'calc(100vh - 520px)',
+            minHeight: '150px',
             WebkitOverflowScrolling: 'touch',
             paddingRight: '2px',
           }}

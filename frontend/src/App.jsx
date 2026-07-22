@@ -9,7 +9,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Top navbar */}
       <nav className="bg-gradient-to-br from-brand-700 to-brand-500 sticky top-0 z-40 shadow-md px-4 py-3.5">
         <div className="flex items-center justify-between max-w-[480px] mx-auto">
           <span className="text-white font-bold text-sm flex items-center gap-2">
@@ -22,14 +21,13 @@ function App() {
             </div>
             Aniversário Seguro
           </span>
-          {/* Badge opcional */}
           <span className="text-[0.45rem] font-bold text-white/70 bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
             Desenvolvido por Matheus Oliveira
           </span>
         </div>
       </nav>
 
-      <main className="flex-1 py-3 overflow-y-visible">
+      <main className={`flex-1 py-3 ${!isForm ? 'pb-[80px]' : 'pb-3'}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/clientes" element={<Cadastro />} />
@@ -38,16 +36,13 @@ function App() {
         </Routes>
       </main>
 
-      {/* Bottom navigation */}
       {!isForm && (
         <nav className="bottom-nav">
           <div className="nav-item">
             <NavLink
               to="/"
               end
-              className={({ isActive }) => 
-                `nav-link${isActive ? ' active' : ''}`
-              }
+              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             >
               <i className="bi bi-house-heart-fill"></i>
               <span>Início</span>
@@ -56,9 +51,7 @@ function App() {
           <div className="nav-item">
             <NavLink
               to="/clientes"
-              className={({ isActive }) => 
-                `nav-link${isActive ? ' active' : ''}`
-              }
+              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             >
               <i className="bi bi-people-fill"></i>
               <span>Clientes</span>

@@ -10,7 +10,6 @@
     @apply box-border;
   }
 
-  /* ✅ REMOVI O FUNDO CINZA DO HTML E BODY */
   html,
   body {
     @apply h-full m-0 p-0;
@@ -22,15 +21,14 @@
 
   #root {
     @apply min-h-screen flex justify-center;
-    /* ✅ FUNDO CINZA APENAS AQUI */
     background-color: #f8fafc;
   }
 }
 
 @layer components {
   .app-container {
-    @apply w-full max-w-[480px] min-h-screen mx-auto px-4 pb-20 flex flex-col;
-    /* ✅ SEM FUNDO CINZA - DEIXA O #root CONTROLAR */
+    /* ✅ pb-20 REMOVIDO DAQUI */
+    @apply w-full max-w-[480px] min-h-screen mx-auto px-4 flex flex-col;
   }
 
   .bottom-nav {
@@ -68,7 +66,6 @@
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   }
 
-  /* ✅ CALENDÁRIO COM COR BRANCA PURA E BORDA SÓLIDA */
   .calendario-card {
     @apply rounded-2xl border border-gray-200 mb-4;
     background-color: #ffffff;
@@ -76,7 +73,8 @@
   }
 
   .fab-btn {
-    @apply fixed bottom-[88px] right-4 z-20;
+    /* ✅ bottom ajustado para ficar acima da navbar (68px + 12px folga) */
+    @apply fixed bottom-[80px] right-4 z-20;
     @apply w-14 h-14 rounded-full flex items-center justify-center;
     @apply bg-gradient-to-br from-brand-600 to-purple-600 text-white;
     @apply shadow-lg hover:shadow-xl hover:scale-105;
