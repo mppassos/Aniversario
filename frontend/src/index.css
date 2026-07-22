@@ -6,36 +6,91 @@
 @tailwind utilities;
 
 @layer base {
-  * {
+
+  *,
+  *::before,
+  *::after {
     @apply box-border;
   }
 
   html,
   body {
     @apply h-full m-0 p-0;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
   }
 
   body {
-    @apply font-sans text-gray-900 antialiased;
+    @apply font-sans text-gray-900;
   }
 
   #root {
     @apply min-h-screen flex justify-center;
-    background-color: #f8fafc;
+    background: #f1f5f9;
   }
 }
 
 @layer components {
-  .app-container {
-    /* ✅ pb-20 REMOVIDO DAQUI */
-    @apply w-full max-w-[480px] min-h-screen mx-auto px-4 flex flex-col;
+
+  .app-shell {
+    @apply w-full max-w-[480px] min-h-screen mx-auto flex flex-col;
+    background: #f1f5f9;
+  }
+
+  .page-content {
+    @apply flex-1 px-4 pt-4;
+    padding-bottom: 84px;
+  }
+
+  .page-content--no-nav {
+    @apply flex-1 px-4 pt-4 pb-6;
+  }
+
+  .top-nav {
+    @apply sticky top-0 z-40 px-4;
+    @apply bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500;
+    @apply shadow-md;
+    /* Safe area iOS */
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: 12px;
+  }
+
+  .top-nav__inner {
+    @apply flex items-center justify-between max-w-[480px] mx-auto;
+  }
+
+  .top-nav__brand {
+    @apply flex items-center gap-2.5;
+  }
+
+  .top-nav__logo {
+    @apply w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm;
+    @apply flex items-center justify-center;
+    @apply border border-white/20 shadow-sm;
+  }
+
+  .top-nav__title {
+    @apply text-white font-bold text-sm leading-tight;
+  }
+
+  .top-nav__subtitle {
+    @apply text-white/60 text-[0.6rem] font-medium;
+  }
+
+  .top-nav__badge {
+    @apply text-[0.5rem] font-semibold text-white/70;
+    @apply bg-white/10 border border-white/15;
+    @apply px-2 py-0.5 rounded-full;
   }
 
   .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 z-30 max-w-[480px] mx-auto;
-    @apply bg-white/95 backdrop-blur-xl border-t border-gray-200/50;
-    @apply h-[68px] flex px-3 pb-2 pt-1;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+    @apply fixed bottom-0 left-0 right-0 z-40;
+    @apply max-w-[480px] mx-auto;
+    @apply bg-white border-t border-gray-200/80;
+    @apply flex items-stretch;
+    height: 68px;
+    box-shadow: var(--tw-shadow-nav, 0 -1px 0 rgba(0, 0, 0, 0.06), 0 -4px 16px rgba(0, 0, 0, 0.04));
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .nav-item {
@@ -43,59 +98,261 @@
   }
 
   .nav-link {
-    @apply flex flex-col items-center justify-center gap-0.5;
-    @apply px-3 py-1.5 text-gray-400 text-[0.6rem] font-medium;
-    @apply rounded-xl transition-all duration-200;
-    @apply hover:text-brand-600 hover:bg-brand-50;
-  }
-
-  .nav-link.active {
-    @apply text-white bg-gradient-to-br from-brand-600 to-purple-600;
-    @apply shadow-md -translate-y-0.5;
+    @apply flex flex-col items-center justify-center gap-0.5 w-full h-full;
+    @apply text-gray-400 text-[0.6rem] font-semibold;
+    @apply transition-colors duration-150;
+    @apply px-2 py-1;
   }
 
   .nav-link i {
-    @apply text-xl;
+    @apply text-[1.35rem] leading-none;
+    @apply transition-transform duration-150;
   }
 
-  .birthday-card {
-    @apply bg-white rounded-2xl p-5 mb-3;
-    @apply border border-gray-200;
-    @apply transition-all duration-300;
-    @apply hover:shadow-lg hover:-translate-y-0.5;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  .nav-link:hover {
+    @apply text-brand-500;
   }
 
-  .calendario-card {
-    @apply rounded-2xl border border-gray-200 mb-4;
-    background-color: #ffffff;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  .nav-link.active {
+    @apply text-brand-600;
   }
 
-  .fab-btn {
-    /* ✅ bottom ajustado para ficar acima da navbar (68px + 12px folga) */
-    @apply fixed bottom-[80px] right-4 z-20;
-    @apply w-14 h-14 rounded-full flex items-center justify-center;
-    @apply bg-gradient-to-br from-brand-600 to-purple-600 text-white;
-    @apply shadow-lg hover:shadow-xl hover:scale-105;
-    @apply transition-all duration-200 text-2xl;
+  .nav-link.active i {
+    @apply scale-110;
+  }
+
+  /* Indicador ativo — bolinha embaixo */
+  .nav-link.active::after {
+    content: '';
+    @apply block w-1 h-1 rounded-full bg-brand-600 mt-0.5;
+  }
+
+  /* ── Cards ────────────────────────────────────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100;
+    box-shadow: var(--tw-shadow, 0 1px 8px rgba(0, 0, 0, 0.06));
+  }
+
+  .card--hover {
+    @apply transition-all duration-200;
+    @apply hover:-translate-y-0.5;
+  }
+
+  .card--hover:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+  }
+
+  /* ── Botões ───────────────────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2;
+    @apply font-semibold rounded-xl;
+    @apply transition-all duration-150;
+    @apply active:scale-[0.97];
+    @apply disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none;
+    min-height: 44px;
+    /* touch target */
+    @apply px-4 text-sm;
   }
 
   .btn-primary {
-    @apply bg-gradient-to-br from-brand-600 to-purple-600 text-white;
-    @apply hover:shadow-lg hover:scale-[1.02] active:scale-95;
-    @apply transition-all duration-200 font-semibold rounded-xl py-3;
+    @apply btn;
+    @apply bg-gradient-to-br from-brand-600 to-brand-700 text-white;
+    @apply hover:from-brand-500 hover:to-brand-600;
+    @apply shadow-sm hover:shadow-md;
   }
 
   .btn-success {
+    @apply btn;
     @apply bg-green-500 text-white;
-    @apply hover:shadow-lg hover:scale-[1.02] active:scale-95;
-    @apply transition-all duration-200 font-semibold rounded-xl py-3;
+    @apply hover:bg-green-600;
+    @apply shadow-sm hover:shadow-md;
   }
 
   .btn-outline {
-    @apply border-2 border-gray-200 text-gray-600 bg-transparent;
-    @apply hover:bg-gray-50 hover:border-gray-300;
-    @apply transition-all duration-200 font-semibold rounded-xl py-3;
+    @apply btn;
+    @apply border-2 border-gray-200 text-gray-600 bg-white;
+    @apply hover:border-gray-300 hover:bg-gray-50;
+  }
+
+  .btn-ghost {
+    @apply btn;
+    @apply text-gray-500 bg-transparent;
+    @apply hover:bg-gray-100 hover:text-gray-700;
+  }
+
+  .btn-danger {
+    @apply btn;
+    @apply text-red-500 bg-transparent;
+    @apply hover:bg-red-50 hover:text-red-600;
+  }
+
+  .btn-icon {
+    @apply btn;
+    @apply w-10 h-10 p-0 rounded-xl;
+    min-height: 40px;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 rounded-xl text-sm text-gray-800;
+    @apply border border-gray-200 bg-white;
+    @apply outline-none transition-all duration-150;
+    @apply placeholder:text-gray-400;
+    @apply focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+    min-height: 48px;
+  }
+
+  .input--error {
+    @apply border-red-400 bg-red-50/30;
+    @apply focus:border-red-500 focus:ring-2 focus:ring-red-100;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full;
+    @apply text-[0.65rem] font-bold;
+  }
+
+  .badge-blue {
+    @apply badge bg-brand-50 text-brand-700;
+  }
+
+  .badge-green {
+    @apply badge bg-green-50 text-green-700;
+  }
+
+  .badge-yellow {
+    @apply badge bg-amber-50 text-amber-700;
+  }
+
+  .badge-gray {
+    @apply badge bg-gray-100 text-gray-500;
+  }
+
+  .avatar {
+    @apply rounded-full flex-shrink-0 flex items-center justify-center;
+    @apply font-bold text-white;
+    @apply bg-gradient-to-br from-brand-500 to-purple-600;
+    @apply shadow-sm;
+  }
+
+  .avatar-sm {
+    @apply avatar w-9 h-9 text-sm;
+  }
+
+  .avatar-md {
+    @apply avatar w-12 h-12 text-base;
+  }
+
+  .avatar-lg {
+    @apply avatar w-14 h-14 text-lg;
+  }
+
+  .fab {
+    @apply fixed z-30;
+    bottom: calc(68px + env(safe-area-inset-bottom) + 12px);
+    right: 16px;
+    @apply w-14 h-14 rounded-2xl shadow-lg;
+    @apply flex items-center justify-center text-2xl text-white;
+    @apply bg-gradient-to-br from-brand-600 to-brand-700;
+    @apply transition-all duration-200;
+    @apply hover:shadow-xl hover:scale-105 active:scale-95;
+  }
+
+  .calendario-card {
+    @apply card mb-4 overflow-hidden;
+  }
+
+  .birthday-card {
+    @apply card card--hover p-4 mb-3;
+  }
+
+  .section-header {
+    @apply flex items-center justify-between mb-3;
+  }
+
+  .section-title {
+    @apply font-bold text-gray-800 text-sm flex items-center gap-2;
+  }
+
+  .section-count {
+    @apply badge-blue text-xs font-bold px-3 py-1 rounded-full;
+  }
+
+  .ptr-container {
+    @apply flex justify-center items-center overflow-hidden;
+    @apply transition-all duration-200;
+  }
+
+  .divider {
+    @apply border-t border-gray-100 my-3;
+  }
+
+  .empty-state {
+    @apply card text-center py-12 px-6;
+  }
+
+  .empty-state__icon {
+    @apply text-5xl text-gray-300 block mb-3;
+  }
+
+  .empty-state__title {
+    @apply font-semibold text-gray-500 text-sm mb-1;
+  }
+
+  .empty-state__desc {
+    @apply text-xs text-gray-400;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 z-50;
+    @apply flex items-end sm:items-center justify-center;
+    @apply bg-black/50 backdrop-blur-sm;
+    @apply animate-fade-in;
+  }
+
+  .modal-sheet {
+    @apply bg-white w-full sm:max-w-sm;
+    @apply rounded-t-3xl sm:rounded-2xl;
+    @apply flex flex-col overflow-hidden;
+    @apply shadow-modal;
+    max-height: 92dvh;
+  }
+
+  .modal-handle {
+    @apply w-10 h-1 rounded-full bg-gray-200 mx-auto mt-3 mb-1 flex-shrink-0;
+  }
+
+  .modal-header {
+    @apply px-5 py-4 flex-shrink-0;
+    @apply border-b border-gray-100;
+  }
+
+  .modal-body {
+    @apply flex-1 overflow-y-auto p-4;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-footer {
+    @apply p-4 flex-shrink-0 border-t border-gray-100 bg-white;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .modal-header--gradient {
+    @apply px-5 py-4 flex-shrink-0;
+    @apply bg-gradient-to-br from-brand-800 to-brand-600;
+  }
+}
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
   }
 }

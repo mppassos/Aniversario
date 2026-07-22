@@ -14,126 +14,120 @@ function Home() {
   const location = useLocation();
   const { aniversariantes, loading, error, recarregar } = useAniversariantes();
   const [clienteModal, setClienteModal] = useState(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible]       = useState(false);
+
   const nomeCorretor = import.meta.env.VITE_NOME_CORRETOR || 'Corretor de Seguros';
-  const aniversariantesList = Array.isArray(aniversariantes) ? aniversariantes : [];
+  const lista = Array.isArray(aniversariantes) ? aniversariantes : [];
 
   useEffect(() => {
-    setIsVisible(false);
-    const timer = setTimeout(() => setIsVisible(true), 50);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setIsVisible(true), 50);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      recarregar();
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    const id = setInterval(recarregar, 5 * 60 * 1000);
+    return () => clearInterval(id);
   }, [recarregar]);
 
   const { pullProgress, isRefreshing } = usePullToRefresh({
-    onRefresh: async () => {
-      await recarregar();
-    },
+    onRefresh: recarregar,
     threshold: 80,
   });
 
   useEffect(() => {
-    const query = new URLSearchParams(location.search);
-    const clienteId = query.get('clienteId');
-    if (clienteId && aniversariantesList.length) {
-      const cliente = aniversariantesList.find((a) => a._id === clienteId);
-      if (cliente) setClienteModal(cliente);
+    const clienteId = new URLSearchParams(location.search).get('clienteId');
+    if (clienteId && lista.length) {
+      const found = lista.find(a => a._id === clienteId);
+      if (found) setClienteModal(found);
     }
-  }, [location.search, aniversariantesList]);
+  }, [location.search, lista]);
 
   async function handleJaEnviei(clienteId) {
     try {
       await marcarComoEnviado(clienteId);
-      toast.success('Cliente marcado como enviado! 🎉');
+      toast.success('Marcado como enviado! 🎉');
       setClienteModal(null);
       await recarregar();
-    } catch (err) {
-      console.error('[Home] Erro ao marcar enviado:', err);
-      toast.error('Erro ao marcar cliente. Tente novamente.');
+    } catch {
+      toast.error('Erro ao marcar. Tente novamente.');
     }
   }
 
-  if (loading) {
-    return <LoadingSpinner texto="Carregando aniversariantes..." />;
-  }
+  if (loading) return <LoadingSpinner texto="Carregando aniversariantes..." />;
 
-  if (error) {
-    return (
-      <div>
-        <div className="bg-red-50 text-red-700 rounded-xl p-3 flex items-center gap-2 text-sm mb-3">
-          <i className="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
-          <span>{error}</span>
+  if (error) return (
+    <div className="animate-fade-in">
+      <div className="card border-red-100 bg-red-50 flex items-start gap-3 p-4 mb-4">
+        <i className="bi bi-exclamation-triangle-fill text-red-500 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-red-700">Erro ao carregar</p>
+          <p className="text-xs text-red-600 mt-0.5">{error}</p>
         </div>
-        <button 
-          className="btn-primary px-6 py-2 text-sm"
-          onClick={() => window.location.reload()}
-        >
-          Recarregar
-        </button>
       </div>
-    );
-  }
-
-  const temAniversariantes = aniversariantesList.length > 0;
+      <button className="btn btn-primary w-full" onClick={recarregar}>
+        <i className="bi bi-arrow-clockwise" />
+        Tentar novamente
+      </button>
+    </div>
+  );
 
   return (
-    <div 
-      className="w-full h-full overflow-visible transition-all duration-300 pb-20"
+    <div
+      className="transition-all duration-300"
       style={{
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
+        opacity:    isVisible ? 1 : 0,
+        transform:  isVisible ? 'translateY(0)' : 'translateY(8px)',
       }}
     >
-      <PullToRefreshIndicator progress={pullProgress} isRefreshing={isRefreshing} />
-      
+      <PullToRefreshIndicator
+        progress={pullProgress}
+        isRefreshing={isRefreshing}
+      />
+
+      {/* Calendário */}
       <CalendarioMensal onSelectCliente={setClienteModal} />
 
-      <div className="flex items-center justify-between mb-3">
-        <h5 className="font-bold text-gray-800 flex items-center gap-2">
-          <i className="bi bi-calendar-heart text-brand-600"></i>
+      {/* Header da seção */}
+      <div className="section-header">
+        <h2 className="section-title">
+          <i className="bi bi-calendar-heart text-brand-600" />
           Aniversariantes de Hoje
-        </h5>
-        {temAniversariantes && (
-          <span className="bg-gradient-to-br from-brand-600 to-purple-600 text-white px-3.5 py-1 rounded-full text-sm font-bold shadow-md">
-            {aniversariantesList.length}
-          </span>
+        </h2>
+        {lista.length > 0 && (
+          <span className="section-count">{lista.length}</span>
         )}
       </div>
 
-      {!temAniversariantes ? (
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/30 text-center p-8">
+      {/* Lista ou estado vazio */}
+      {lista.length === 0 ? (
+        <div className="card text-center py-10 px-6 animate-fade-in">
           <div className="text-5xl mb-3">🎉</div>
-          <h6 className="font-semibold text-green-800">Nenhum aniversariante hoje</h6>
-          <p className="text-xs text-green-600 mt-1">Aproveite o dia tranquilo!</p>
+          <p className="font-semibold text-gray-600 text-sm">
+            Nenhum aniversariante hoje
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Aproveite o dia tranquilo!
+          </p>
         </div>
       ) : (
-          
-        <div 
-          className="space-y-3 pb-5 overflow-y-auto"
-          style={{ 
-            maxHeight: 'calc(100vh - 520px)',
-            minHeight: '150px',
-            WebkitOverflowScrolling: 'touch',
-            paddingRight: '2px',
-          }}
-        >
-          {aniversariantesList.map((cliente) => (
-            <AniversarianteDoDia
+        <div className="space-y-0">
+          {lista.map((cliente, idx) => (
+            <div
               key={cliente._id}
-              cliente={cliente}
-              onGerarMensagem={setClienteModal}
-              onJaEnviei={handleJaEnviei}
-            />
+              className="animate-slide-up"
+              style={{ animationDelay: `${idx * 60}ms` }}
+            >
+              <AniversarianteDoDia
+                cliente={cliente}
+                onGerarMensagem={setClienteModal}
+                onJaEnviei={handleJaEnviei}
+              />
+            </div>
           ))}
         </div>
       )}
 
+      {/* Modal gerador */}
       <GeradorMensagem
         cliente={clienteModal}
         nomeCorretor={nomeCorretor}

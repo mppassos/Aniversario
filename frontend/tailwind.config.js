@@ -22,18 +22,27 @@ export default {
       },
       animation: {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "fade-in": "fadeIn 0.3s ease-out",
+        "fade-in": "fadeIn 0.25s ease-out",
         "slide-up": "slideUp 0.3s ease-out",
+        "slide-down": "slideDown 0.3s ease-out",
+        "spin-slow": "spin 1.5s linear infinite",
       },
       keyframes: {
-        fadeIn: {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
-        },
+        fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
         slideUp: {
-          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "0%": { opacity: "0", transform: "translateY(12px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        slideDown: {
+          "0%": { opacity: "0", transform: "translateY(-12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      boxShadow: {
+        card: "0 1px 8px rgba(0,0,0,0.06), 0 0 1px rgba(0,0,0,0.04)",
+        "card-hover": "0 4px 16px rgba(0,0,0,0.10), 0 0 1px rgba(0,0,0,0.04)",
+        nav: "0 -1px 0 rgba(0,0,0,0.06), 0 -4px 16px rgba(0,0,0,0.04)",
+        modal: "0 20px 60px rgba(0,0,0,0.18)",
       },
     },
   },
