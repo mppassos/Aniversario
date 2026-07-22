@@ -50,7 +50,7 @@
   .page-content {
     @apply flex-1 px-4 pt-4;
     /* bottom-nav(68px) + safe-area iOS + folga(16px) */
-    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 24px);
   }
 
   /* Área de conteúdo SEM bottom-nav (formulários) */

@@ -73,10 +73,11 @@ function Home() {
 
   return (
     <div
-      className="transition-all duration-300"
+      className="animate-fade-in"
       style={{
         opacity:   isVisible ? 1 : 0,
         transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity 0.3s ease, transform 0.3s ease',
       }}
     >
       <PullToRefreshIndicator
@@ -97,7 +98,7 @@ function Home() {
       </div>
 
       {lista.length === 0 ? (
-        <div className="card text-center py-10 px-6 animate-fade-in">
+        <div className="card text-center py-10 px-6">
           <div className="text-5xl mb-3">🎉</div>
           <p className="font-semibold text-gray-600 text-sm">
             Nenhum aniversariante hoje
@@ -107,7 +108,7 @@ function Home() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3 pb-2">
+        <div className="space-y-3">
           {lista.map((cliente, idx) => (
             <div
               key={cliente._id}
