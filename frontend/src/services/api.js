@@ -27,13 +27,20 @@ api.interceptors.response.use(
 
 export async function listarClientes(page = 1, limit = 50, search = "") {
   const { data } = await api.get("/clientes", {
-    params: { page, limit, search },
+    params: {
+      page,
+      limit,
+      search,
+      _t: Date.now(),
+    },
   });
   return data;
 }
 
 export async function buscarClientePorId(id) {
-  const { data } = await api.get(`/clientes/${id}`);
+  const { data } = await api.get(`/clientes/${id}`, {
+    params: { _t: Date.now() },
+  });
   return data;
 }
 
@@ -52,7 +59,9 @@ export async function deletarCliente(id) {
 }
 
 export async function listarAniversariantesHoje() {
-  const { data } = await api.get("/aniversario/hoje");
+  const { data } = await api.get("/aniversario/hoje", {
+    params: { _t: Date.now() },
+  });
   return data;
 }
 
@@ -77,7 +86,9 @@ export async function salvarMensagemHistorico(payload) {
 }
 
 export async function buscarHistoricoCliente(clienteId) {
-  const { data } = await api.get(`/historico/cliente/${clienteId}`);
+  const { data } = await api.get(`/historico/cliente/${clienteId}`, {
+    params: { _t: Date.now() },
+  });
   return data;
 }
 

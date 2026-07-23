@@ -9,6 +9,7 @@ import {
   criarCliente,
 } from '../services/api';
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function formatDateToDisplay(isoDate) {
   if (!isoDate) return '';
   const [year, month, day] = isoDate.split('-');
@@ -40,7 +41,7 @@ function ClienteForm() {
     telefone: '',
     observacoes: '',
   });
-  const [errors, setErrors] = useState({}); 
+  const [errors, setErrors] = useState({});  
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
 
@@ -76,10 +77,6 @@ function ClienteForm() {
     const newValue = name === 'telefone' ? applyPhoneMask(value) : value;
     setForm((prev) => ({ ...prev, [name]: newValue }));
     if (newValue) setErrors((prev) => ({ ...prev, [name]: '' }));
-  }
-
-  function handleDisplayClick() {
-    dateInputRef.current?.showPicker?.() ?? dateInputRef.current?.click();
   }
 
   function validate() {
@@ -189,53 +186,66 @@ function ClienteForm() {
           </div>
 
           {/* Data de Nascimento */}
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Data de Nascimento <span className="text-red-500">*</span>
-            </label>
+<div className="mb-4">
+  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+    Data de Nascimento <span className="text-red-500">*</span>
+  </label>
 
-            <div className="relative">
-              <div
-                className={`${inputClass('dataNascimento')} flex items-center justify-between cursor-pointer`}
-                onClick={handleDisplayClick}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && handleDisplayClick()}
-              >
-                <span className={form.dataDisplay ? 'text-gray-700' : 'text-gray-400'}>
-                  {form.dataDisplay || 'DD/MM/AAAA'}
-                </span>
-                <i className="bi bi-calendar3 text-gray-400 text-lg"></i>
-              </div>
+  <div className="relative">
+    {/* Overlay visual clicável */}
+    <div
+      className={`${inputClass('dataNascimento')} flex items-center justify-between cursor-pointer select-none`}
+      onClick={() => dateInputRef.current?.focus()}
+      onTouchEnd={(e) => {
+        e.preventDefault();
+        dateInputRef.current?.focus();
+        setTimeout(() => {
+          try {
+            dateInputRef.current?.showPicker?.();
+          } catch {}
+        }, 100);
+      }}
+    >
+      <span className={form.dataDisplay ? 'text-gray-700' : 'text-gray-400'}>
+        {form.dataDisplay || 'DD/MM/AAAA'}
+      </span>
+      <i className="bi bi-calendar3 text-gray-400 text-lg"></i>
+    </div>
 
-              <input
-                ref={dateInputRef}
-                type="date"
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                value={form.dataNascimento}
-                onChange={handleDateChange}
-                tabIndex={-1}
-                aria-hidden="true"
-              />
-            </div>
+    {/* Input nativo oculto */}
+    <input
+      ref={dateInputRef}
+      type="date"
+      className="absolute inset-0 opacity-0 pointer-events-none"
+      value={form.dataNascimento}
+      onChange={handleDateChange}
+      onBlur={(e) => {
+        // Previne fechar quando em mobile
+        if (document.activeElement === e.target) {
+          e.preventDefault();
+        }
+      }}
+      tabIndex={-1}
+    />
+  </div>
 
-            {errors.dataNascimento && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <i className="bi bi-exclamation-circle-fill"></i>
-                {errors.dataNascimento}
-              </p>
-            )}
+  {errors.dataNascimento && (
+    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+      <i className="bi bi-exclamation-circle-fill"></i>
+      {errors.dataNascimento}
+    </p>
+  )}
 
-            {form.dataDisplay && !errors.dataNascimento && (
-              <div className="mt-2 bg-green-50 border border-green-100 rounded-xl p-2.5 flex items-center gap-2">
-                <i className="bi bi-check-circle-fill text-green-500 flex-shrink-0"></i>
-                <span className="text-sm text-gray-700">
-                  Data selecionada:{' '}
-                  <span className="font-semibold text-green-600">{form.dataDisplay}</span>
-                </span>
-              </div>
-            )}
-          </div>
+  {form.dataDisplay && !errors.dataNascimento && (
+    <div className="mt-2 bg-green-50 border border-green-100 rounded-xl p-2.5 flex items-center gap-2">
+      <i className="bi bi-check-circle-fill text-green-500 flex-shrink-0"></i>
+      <span className="text-sm text-gray-700">
+        Data selecionada:{' '}
+        <span className="font-semibold text-green-600">{form.dataDisplay}</span>
+      </span>
+    </div>
+  )}
+</div>
 
           {/* Telefone */}
           <div className="mb-4">

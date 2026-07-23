@@ -2,6 +2,7 @@ import { eachDayOfInterval, endOfMonth, startOfMonth } from "date-fns";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { notificarRecarregarAniversariantes } from "../hooks/useAniversariantes";
 import { deletarCliente, listarClientes } from "../services/api";
 import { getHojeLocal, ordenarPorParabenizado } from "../utils/dateUtils";
 
@@ -32,6 +33,19 @@ export function useCalendario({ onJaEnviei, onRecarregar }) {
 
   useEffect(() => {
     carregarClientes();
+
+    const escutarRecarregar = () => {
+      carregarClientes();
+    };
+
+    window.addEventListener("recarregar-aniversariantes", escutarRecarregar);
+
+    return () => {
+      window.removeEventListener(
+        "recarregar-aniversariantes",
+        escutarRecarregar,
+      );
+    };
   }, [carregarClientes]);
 
   function getAniversariantesDoDia(dia) {
@@ -88,11 +102,20 @@ export function useCalendario({ onJaEnviei, onRecarregar }) {
     try {
       await deletarCliente(clienteId);
       toast.success("Cliente excluido.");
-      await carregarClientes();
+
+      setClientes((atual) => atual.filter((c) => c._id !== clienteId));
+
       const novos = clientesDoDia.filter((c) => c._id !== clienteId);
-      if (novos.length === 0) fecharModal();
-      else setClientesDoDia(novos);
+      if (novos.length === 0) {
+        fecharModal();
+      } else {
+        setClientesDoDia(novos);
+      }
+
+      notificarRecarregarAniversariantes();
       onRecarregar?.();
+
+      await carregarClientes();
     } catch {
       toast.error("Erro ao excluir. Tente novamente.");
     }

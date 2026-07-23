@@ -1,137 +1,161 @@
 const cron = require("node-cron");
-const Cliente = require("../models/Cliente");
 const NodeCache = require("node-cache");
+const Cliente = require("../models/Cliente");
 
 const TIMEZONE = process.env.APP_TIMEZONE || "America/Sao_Paulo";
-const birthdayCache = new NodeCache({ stdTTL: 300 });
 
-function getHojeNoFusoBrasil() {
-  const agora = new Date();
-  const emBrasil = new Date(
-    agora.toLocaleString("en-US", { timeZone: TIMEZONE }),
-  );
-  return emBrasil;
-}
+const CRON_EXPRESSIONS = {
+  DAILY_MIDNIGHT: "0 0 * * *",
+  ANNUAL_RESET: "0 0 1 1 *",
+};
 
-function startOfToday() {
-  const hoje = getHojeNoFusoBrasil();
-  hoje.setHours(0, 0, 0, 0);
-  return hoje;
-}
+const cacheInstance = new NodeCache({ stdTTL: 300 });
 
-function sameDayMonthExpression(date) {
-  return {
-    $and: [
-      { $eq: [{ $dayOfMonth: "$dataNascimento" }, date.getDate()] },
-      { $eq: [{ $month: "$dataNascimento" }, date.getMonth() + 1] },
-    ],
-  };
-}
+const CacheManager = {
+  get(key) {
+    return cacheInstance.get(key);
+  },
+  set(key, value) {
+    return cacheInstance.set(key, value);
+  },
+  flush() {
+    return cacheInstance.flushAll();
+  },
+};
 
-async function getBirthdayClients(forceRefresh = false) {
-  const hoje = getHojeNoFusoBrasil();
-  const ano = hoje.getFullYear();
-  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-  const dia = String(hoje.getDate()).padStart(2, "0");
-  const cacheKey = `${ano}-${mes}-${dia}`;
+const DateHelper = {
+  getHojeNoFusoBrasil() {
+    const agora = new Date();
+    return new Date(agora.toLocaleString("en-US", { timeZone: TIMEZONE }));
+  },
 
-  if (!forceRefresh) {
-    const cached = birthdayCache.get(cacheKey);
-    if (cached) return cached;
-  }
+  startOfToday() {
+    const hoje = this.getHojeNoFusoBrasil();
+    hoje.setHours(0, 0, 0, 0);
+    return hoje;
+  },
 
-  const clientes = await Cliente.find({
-    $expr: sameDayMonthExpression(hoje),
-  })
-    .sort({ nome: 1 })
-    .lean();
+  getCacheKey(date) {
+    const ano = date.getFullYear();
+    const mes = String(date.getMonth() + 1).padStart(2, "0");
+    const dia = String(date.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+  },
 
-  birthdayCache.set(cacheKey, clientes);
-  return clientes;
-}
+  getMongoDBBirthdayExpression(date) {
+    return {
+      $and: [
+        { $eq: [{ $dayOfMonth: "$dataNascimento" }, date.getDate()] },
+        { $eq: [{ $month: "$dataNascimento" }, date.getMonth() + 1] },
+      ],
+    };
+  },
+};
 
-async function invalidateBirthdayCache() {
-  birthdayCache.flushAll();
-}
+const BirthdayService = {
+  async getBirthdayClients(forceRefresh = false) {
+    const hoje = DateHelper.getHojeNoFusoBrasil();
+    const cacheKey = DateHelper.getCacheKey(hoje);
 
-async function processDailyBirthdays() {
-  const aniversariantes = await getBirthdayClients(true);
-  return aniversariantes.length;
-}
+    if (!forceRefresh) {
+      const cached = CacheManager.get(cacheKey);
+      if (cached) return cached;
+    }
 
-async function resetParabenizadoHoje() {
-  await Cliente.updateMany(
-    { parabenizadoHoje: true },
-    { $set: { parabenizadoHoje: false } },
-  );
-  await invalidateBirthdayCache();
-  console.log("[CRON] Flag parabenizadoHoje resetada.");
-}
+    const clientes = await Cliente.find({
+      $expr: DateHelper.getMongoDBBirthdayExpression(hoje),
+    })
+      .sort({ nome: 1 })
+      .lean();
 
-async function resetAnual() {
-  await Cliente.updateMany(
-    { anoParabenizado: { $ne: null } },
-    {
-      $set: {
-        anoParabenizado: null,
-        parabenizadoHoje: false,
-        ultimaDataParabenizacao: null,
+    CacheManager.set(cacheKey, clientes);
+    return clientes;
+  },
+
+  async invalidateCache() {
+    CacheManager.flush();
+  },
+
+  async processDailyBirthdays() {
+    const aniversariantes = await this.getBirthdayClients(true);
+    return aniversariantes.length;
+  },
+
+  async resetAnual() {
+    await Cliente.updateMany(
+      {
+        $or: [
+          { parabenizadoHoje: true },
+          { anoParabenizado: { $ne: null } },
+          { ultimaDataParabenizacao: { $ne: null } },
+        ],
       },
+      {
+        $set: {
+          parabenizadoHoje: false,
+          anoParabenizado: null,
+          ultimaDataParabenizacao: null,
+        },
+      },
+    );
+    await this.invalidateCache();
+    console.log("[CRON] Reset anual executado com sucesso - Ciclo reiniciado.");
+  },
+};
+
+const Jobs = [
+  {
+    name: "Verificação Diária (Meia-noite)",
+    cronExpression: CRON_EXPRESSIONS.DAILY_MIDNIGHT,
+    async execute() {
+      const total = await BirthdayService.processDailyBirthdays();
+      console.log(
+        `[CRON] Verificação diária das 00:00 concluída: ${total} aniversariantes identificados e cache preparado.`,
+      );
     },
-  );
-  await invalidateBirthdayCache();
-  console.log("[CRON] Reset anual executado — todos os clientes resetados.");
-}
+  },
+  {
+    name: "Reset Anual de Ciclo (1º Jan)",
+    cronExpression: CRON_EXPRESSIONS.ANNUAL_RESET,
+    async execute() {
+      await BirthdayService.resetAnual();
+    },
+  },
+];
 
 function iniciarAgendamentos() {
-  cron.schedule(
-    "0 0 * * *",
-    async () => {
-      try {
-        await resetParabenizadoHoje();
-      } catch (err) {
-        console.error("[CRON] Erro no reset diario:", err.message);
-      }
-    },
-    { timezone: TIMEZONE },
-  );
+  console.log("[CRON] Inicializando agendamentos do sistema...");
 
-  cron.schedule(
-    "0 8 * * *",
-    async () => {
-      try {
-        const total = await processDailyBirthdays();
-        console.log(`[CRON] ${total} aniversariantes encontrados.`);
-      } catch (err) {
-        console.error("[CRON] Erro na verificacao:", err.message);
-      }
-    },
-    { timezone: TIMEZONE },
-  );
+  Jobs.forEach((job) => {
+    cron.schedule(
+      job.cronExpression,
+      async () => {
+        try {
+          console.log(`[CRON] Executando tarefa: ${job.name}...`);
+          await job.execute();
+        } catch (err) {
+          console.error(
+            `[CRON] Erro crítico na tarefa [${job.name}]:`,
+            err.message,
+          );
+        }
+      },
+      { timezone: TIMEZONE },
+    );
+  });
 
-  cron.schedule(
-    "0 0 31 12 *",
-    async () => {
-      try {
-        await resetAnual();
-      } catch (err) {
-        console.error("[CRON] Erro no reset anual:", err.message);
-      }
-    },
-    { timezone: TIMEZONE },
+  console.log(
+    `[CRON] Todos os agendamentos carregados com sucesso no fuso ${TIMEZONE}.`,
   );
-
-  console.log("[CRON] Agendamentos iniciados.");
 }
 
 module.exports = {
   iniciarAgendamentos,
-  processDailyBirthdays,
-  resetParabenizadoHoje,
-  resetAnual,
-  sameDayMonthExpression,
-  startOfToday,
-  getBirthdayClients,
-  invalidateBirthdayCache,
-  getHojeNoFusoBrasil,
+  processDailyBirthdays: () => BirthdayService.processDailyBirthdays(),
+  resetAnual: () => BirthdayService.resetAnual(),
+  sameDayMonthExpression: DateHelper.getMongoDBBirthdayExpression,
+  startOfToday: () => DateHelper.startOfToday(),
+  getBirthdayClients: (force) => BirthdayService.getBirthdayClients(force),
+  invalidateBirthdayCache: () => BirthdayService.invalidateCache(),
+  getHojeNoFusoBrasil: () => DateHelper.getHojeNoFusoBrasil(),
 };

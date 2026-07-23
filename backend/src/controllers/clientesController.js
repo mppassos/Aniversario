@@ -1,4 +1,5 @@
 const Cliente = require("../models/Cliente");
+const { invalidateBirthdayCache } = require("../services/agendamentoService");
 
 function parseDateOnly(dateStr) {
   const [year, month, day] = String(dateStr).split("-").map(Number);
@@ -119,6 +120,10 @@ async function criarCliente(req, res) {
       observacoes: observacoes ? String(observacoes).trim() : "",
     });
 
+    if (typeof invalidateBirthdayCache === "function") {
+      await invalidateBirthdayCache();
+    }
+
     return res.status(201).json(cliente);
   } catch (error) {
     console.error("[clientesController] criarCliente:", error.message);
@@ -176,6 +181,10 @@ async function atualizarCliente(req, res) {
       return res.status(404).json({ message: "Cliente nao encontrado." });
     }
 
+    if (typeof invalidateBirthdayCache === "function") {
+      await invalidateBirthdayCache();
+    }
+
     return res.json(cliente);
   } catch (error) {
     console.error("[clientesController] atualizarCliente:", error.message);
@@ -190,6 +199,10 @@ async function deletarCliente(req, res) {
 
     if (!cliente) {
       return res.status(404).json({ message: "Cliente nao encontrado." });
+    }
+
+    if (typeof invalidateBirthdayCache === "function") {
+      await invalidateBirthdayCache();
     }
 
     return res.status(204).send();
